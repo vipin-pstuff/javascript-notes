@@ -1,0 +1,133 @@
+* {
+    margin : 0 ;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --white-color : white ;
+    --bg-edit-color : #b1f560 ; 
+    --bg-delete-color : #ff4f52 ; 
+    --nav-color : hsl(45, 94%, 50%) ;
+    --button-color : rgb(255, 245, 219) ;
+    --outline-clr : rgb(253, 152, 0) ;
+    --container-clr : hsl(0, 0%, 10%) ;
+    --todo-box-clr : rgb(183 183 183) ;
+}
+
+html {
+    font-size : 62.5% ;
+}
+
+body {
+    font-family : sans-serif ;
+}   
+
+button {
+    cursor : pointer ;
+}
+
+.navigation {
+    width: 100%;
+    padding : 2em ;
+    background-color: var(--nav-color) ;
+
+    display: flex;
+    justify-content: space-between;
+    align-items : center ;
+}
+
+.logo-box h1 {
+    font-size : 2rem ;
+}
+
+.add-todo .btn {
+    background-color: var(--button-color);
+    padding : 1rem ;
+    border-radius : .25rem ;
+    border : 0 ;
+    outline : none ;
+    outline : .2rem solid var(--outline-clr) ;
+}
+
+.add-todo .btn .fa {
+    margin-right : .8rem ;
+}
+
+.container-note {
+    width: 100%;
+    min-height : 100vh ;
+    background-color: var(--container-clr);
+    padding-block : 4em ;
+}
+
+.todo-lists {
+    width: 92%;
+    margin-inline : auto ;
+    
+    display: grid ;
+    gap : 2em ;
+    justify-content: center;
+    grid-template-columns : repeat(auto-fit , minmax(280px , .3fr))
+}
+
+.todo-box {
+    padding : .8rem ;
+    padding-bottom : 2em ;
+    background-color: var(--todo-box-clr);
+
+    display: flex ;
+    flex-direction : column ;
+}
+
+.todo-note {
+    flex-grow : 1 ;
+    font-size : 1.4rem ;
+    margin-top : 1.4rem ;
+}
+
+textarea {
+    min-height : 100px ;
+    outline : none ;
+    border : 0 ;
+    resize : none ;
+    margin-top : 1.4rem ;
+}
+
+.icon-box {
+    width: 100%;
+    text-align : right ;
+}
+
+.icon-box button {
+    padding : .7rem ;
+    border-radius : 50px ;
+    border : 0 ;
+}
+
+.icon-box button:first-child {
+    background-color : var(--bg-edit-color) ;
+    border : .2em solid transparent ;
+    margin-right : .4rem ;
+}
+
+.icon-box button:last-child {
+    border : .2em solid transparent ;
+    background-color : var(--bg-delete-color) ;
+}
+
+.icon-box button:first-child:focus , 
+.icon-box button:last-child:focus {
+    border-color : var(--white-color) ;
+} 
+
+.hidden {
+    display: none ;
+}
+
+@media (max-width : 48em) {
+
+    .todo-lists {
+        grid-template-columns : repeat(auto-fit , minmax(280px , 1fr))
+    }
+}
