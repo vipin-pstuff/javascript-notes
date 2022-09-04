@@ -543,7 +543,7 @@ function saveTodos() {
                 which any of the browser storage need especially 
                 if we're dealing with local storage 
             - so that conflict doesn't happen with two different application
-                instead of directly defining key inside localStorage , etc 💡💡💡
+                instead of directly defining key name as an argument inside setItem() method of localStorage , etc 💡💡💡
             
             - here we can give value which related to our application
 
