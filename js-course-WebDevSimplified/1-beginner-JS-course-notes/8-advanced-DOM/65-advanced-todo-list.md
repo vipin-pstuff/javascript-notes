@@ -459,7 +459,7 @@ function saveTodos() {
 
         - right now we don't have good way to reference all the todos
             because inside html , all those todos stored in the form html code 
-        - but we also want to store those all todos in array form 💡💡💡
+        - but we also want to store all those todos in an array form inside the JS also 💡💡💡
 
     STEP 4.1 create empty array to store all the html todos inside this array ✅
 
@@ -984,6 +984,9 @@ function saveTodos() {
                         then we can't do through first way
 
             second way - create unique identifier for each todo 
+                - because again if we gave two todos with same text 
+                - & if we checked one of them & then refresh the page then both also get checked 
+                - so that's why , we need unique id for each todo 💡💡💡
 
         - so we use Math.random() like this 
             const newTodo = {
@@ -998,6 +1001,8 @@ function saveTodos() {
         - so we can use Date().valueOf().toString() ✅
             - valueOf() method of Date() class will return a unique number after every milliseconds 💡💡💡
             - & toString() will convert that unique number in string type 💡💡💡
+                & we converted into string because inside of local storage , 
+                everything gets converted to a string , so just to make comparison easy later on 💡💡💡 
 
         - & it's not possible for user to create two todos at the same milliseconds ✔✔
 
@@ -1309,8 +1314,8 @@ function saveTodos() {
             const parent = e.target.closest(".list-item")
             const todoId = parent.dataset.todoId
             // remove the todo from the UI
-            // remove the todo from the list i.e inside local storage
-            // re save the new todos
+            // remove the todo from the list i.e todos array
+            // re-save the new todos inside local storage
         })
 
         form.addEventListener('click' , e => {
@@ -1359,15 +1364,15 @@ function saveTodos() {
             const todoId = parent.dataset.todoId
             // remove the todo from the UI
             parent.remove()
-            // remove the todo from the list i.e inside local storage
-            // re save the new todos
+            // remove the todo from the list i.e todos array
+            // re-save the new todos inside local storage
         })
 
         - so when we delete the todo & refresh the page
             then that todo comes again in UI
 
         - so we need to delete that todo from local storage also 
-            & re save that new todo list inside local storage
+            & re-save that new todo list inside local storage
 
     STEP 7.2 : remove the todo from the list 
 
@@ -1410,6 +1415,9 @@ function saveTodos() {
 
         // output : now when we delete the todo from UI & refresh the page
                     then that todo will be removed from local storage + from UI also
+
+- here we also saw that we added the data attribute dynamically to the `<li></li>` element i.e list-item class <br>
+    instead of defining already inside the `template` element 💡💡💡 
 
 ## discussion page
 
