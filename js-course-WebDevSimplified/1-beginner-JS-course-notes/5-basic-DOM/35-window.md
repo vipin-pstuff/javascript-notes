@@ -163,6 +163,11 @@
 
 ## ---------------------- extra stuff -----------------------
 
+    -> about BOM (browser object model)
+        - https://www.javatpoint.com/browser-object-model
+        - https://www.javascripttutorial.net/javascript-bom/ 👍
+        - https://www.samanthaming.com/tidbits/86-window-location-cheatsheet/ 🔥
+
     -> global functions
 
         - decodeURL()
