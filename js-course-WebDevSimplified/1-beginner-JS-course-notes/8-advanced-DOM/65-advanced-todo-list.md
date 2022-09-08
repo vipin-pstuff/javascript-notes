@@ -172,7 +172,7 @@ button {
     const TODOS_STORAGE_KEY = `${LOCAL_STORAGE_PREFIX}-todos`
 
     // pushing new todos 
-    let todos = loadLocaleTodos()
+    let todos = loadTodos()
     todos.forEach(renderTodo)
 
     form.addEventListener('submit' , e => {
@@ -191,7 +191,7 @@ button {
 
       // adding todo text
       todos.push(newTodo)
-      saveLocaleTodos()
+      saveTodos()
       renderTodo(newTodo)
       todoInput.value = ""
     })
@@ -210,12 +210,12 @@ button {
     }
 
     // save local todods
-    function saveLocaleTodos() {
+    function saveTodos() {
       localStorage.setItem(TODOS_STORAGE_KEY , JSON.stringify(todos))
     }
 
     // load local todos
-    function loadLocaleTodos() {
+    function loadTodos() {
       const todoItems = localStorage.getItem(TODOS_STORAGE_KEY)
       return JSON.parse(todoItems) || []
     }
@@ -229,7 +229,7 @@ button {
       const todoItem = todos.find(t => t.id === todoId)
       todoItem.complete = e.target.checked
 
-      saveLocaleTodos()
+      saveTodos()
     })
 
     // delete todos
@@ -241,7 +241,7 @@ button {
       parent.remove()
       todos = todos.filter(todo => todo.id !== todoId)
 
-      saveLocaleTodos()
+      saveTodos()
     })
     ```
 
@@ -265,8 +265,14 @@ button {
     STEP 4 : when we reload the page then all that todos 
                 should be there in UI as well as inside local storage
 
-
 ## explanation of code 🔥
+
+    - Advice of me 🔥 : first implement the add todo functionality
+        - then implement save those todo inside local storage 
+            then load the todo from local storage 
+        - & then these first three gets completed then implement the further CRUD operations 💡💡💡
+        - this will complete clear & make the concept understandable 
+
 
     - now think about that what user going to do in that UI 💡💡💡
         first - need to add the todo
