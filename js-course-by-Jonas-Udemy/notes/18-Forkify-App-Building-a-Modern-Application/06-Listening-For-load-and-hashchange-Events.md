@@ -417,5 +417,8 @@
     }) 
     ```
     - output : now if we don't have any hash id on the URL then we'll not get any error 
+        - & when we click on either Recipe 1 or Recipe 2 link then we'll get the recipe according to their hash id <br> 
+            so we're able to switch b/w different recipe 
+        - so this important part of our project ✔️
 
 - now here the code is not implemented in clean way so in next lecture , we'll talk about architecture of this project
