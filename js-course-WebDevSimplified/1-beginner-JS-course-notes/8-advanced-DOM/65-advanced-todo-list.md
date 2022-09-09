@@ -627,12 +627,13 @@ button {
             - we're doing this because localStorage is site depend
                 means if we open that site in multiple different tabs
                 then local storage of each tab contain same data
-            - & that's create a bug because let's if we have two different application
-                & each different application has same local storage key
+            - & that's create a bug or let's if we have two different application
+                & each different application has same local storage key name
                 then they're going to be conflict each other 💡💡💡
             - so that's why always make a global variable to store a key
                 which any of the browser storage need especially 
                 if we're dealing with local storage 
+            - simple means always create/define unique local storage key unique for each different application 💡💡💡 
             - so that conflict doesn't happen with two different application
                 instead of directly defining key name as an argument inside setItem() method of localStorage , etc 💡💡💡
             
