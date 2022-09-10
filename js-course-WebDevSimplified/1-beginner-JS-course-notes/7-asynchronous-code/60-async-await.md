@@ -874,6 +874,7 @@ more about on async await check these videos
 ## Extra Notes 
 
 - Asynchronous JS – Callbacks, Promises, and Async/Await : https://www.freecodecamp.org/news/asynchronous-javascript-explained/
+- Async/Await, Promises, and Callbacks (Joy Shaheb YT) : https://www.youtube.com/watch?v=ZYb_ZU8LNxs 🔥
 - Callbacks, Promises, and Async-Await in JS : https://www.youtube.com/watch?v=QDsyvBzfiZo&ab_channel=DevTuts
 
 ## discussion page
