@@ -391,7 +391,7 @@
                 id:  recipe.id , 
                 title: recipe.title, 
                 publisher: recipe.publisher,
-                sourceUrl: recipe.source_url ,l
+                sourceUrl: recipe.source_url ,
                 image: recipe.image_url, 
                 servings: recipe.servings, 
                 cookingTime: recipe.cooking_time ,
@@ -401,7 +401,7 @@
             console.log(recipe) 
 
             // 2 - Rendering recipe
-            const markup = `// put code of it`
+            const markup = `// put code of it from Eg : 2`
 
         recipeContainer.innerHTML = ""
         recipeContainer.insertAdjacentHTML('afterbegin', markup)
