@@ -1,5 +1,7 @@
 # Refactoring for MVC
 
+- `most most important lecture 🔥`  
+
 - things need to do : go inside the `src/js` folder 
     - `1` : create a `model.js`
         - so this file will contain module in which we write our entire model 
@@ -815,10 +817,17 @@
         }
 
         const renderSpinner = function(parentEl) { 
-            // put code of this function from STEP 1.3
+            const markup = `
+                <div class="spinner">
+                    <svg><use href="${icons}#icon-loader"></use></svg>
+                </div>
+            `
+
+            parentEl.innerHTML = ""
+            parentEl.insertAdjacentHTML('afterbegin', markup)
         }
 
-        const showRecipe = async function() {
+        const controlRecipe = async function() {
             try {
                 const id = window.location.hash.slice(1)
                 console.log(id)
@@ -838,11 +847,852 @@
             }
         }
 
-        ['hashchange', 'load'].forEach((e) => { 
-            window.addEventListener(e , showRecipe)
-        }) 
+        ['hashchange', 'load'].forEach((e) => window.addEventListener(e , controlRecipe)) 
+        ```
+        - now we just need to export the renderSpinner inside the recipeView.js file 
+        - so cut this code of renderSpinner() function from controller.js file <br>
+            because it has nothing to do with controller.js file 
+            ```js
+            const renderSpinner = function(parentEl) { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}#icon-loader"></use></svg>
+                    </div>
+                `
+
+                parentEl.innerHTML = ""
+                parentEl.insertAdjacentHTML('afterbegin', markup)
+            }
+            ```
+    - `STEP 3.2` : & pasting the code of renderSpinner() function inside recipeView.js file 
+        ```js
+        class RecipeView {
+            // private properties
+            #parentElement = document.querySelector('.recipe')
+            #data
+
+            render(data) {
+                this.#data = data
+
+                const markup = this.#generateMarkup
+                this.#clear
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            #clear() {
+                this.#parentElement.innerHTML = '' 
+            }
+
+            // we made this public so that when controller can call this method
+                // as it starts fetching the data 💡💡💡
+            renderSpinner = function() { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}#icon-loader"></use></svg>
+                    </div>
+                `
+
+                this.#parentElement.innerHTML = ""
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            // private method
+            #generateMarkup() {
+                return `
+                    <figure class="recipe__fig">
+                        <img src="${this.#data.image}" alt="${this.#data.title}" class="recipe__img" />
+                        <h1 class="recipe__title">
+                          <span>${this.#data.title}</span>
+                        </h1>
+                    </figure>
+
+                    <div class="recipe__details">
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--minutes">${this.#data.cookingTime}</span>
+                            <span class="recipe__info-text">minutes</span>
+                        </div>
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--people">${this.#data.servings}</span>
+                            <span class="recipe__info-text">servings</span>
+
+                            <div class="recipe__info-buttons">
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                                </button>
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="recipe__user-generated">
+                            <svg><use href="${icons}#icon-user"></use></svg>
+                        </div>
+                        <button class="btn--round">
+                            <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                        </button>
+                    </div>
+
+                    <div class="recipe__ingredients">
+                        <h2 class="heading--2">Recipe ingredients</h2>
+                        <ul class="recipe__ingredient-list">
+                            ${this.#data.ingredients.map(ing => {
+                                return `
+                                    <li class="recipe__ingredient">
+                                        <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                                        <div class="recipe__quantity">${ing.quantity}</div>
+                                        <div class="recipe__description">
+                                            <span class="recipe__unit">${ing.unit}</span>
+                                            ${ing.description}
+                                        </div>
+                                    </li>
+                                `
+                            }).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="recipe__directions">
+                        <h2 class="heading--2">How to cook it</h2>
+                        <p class="recipe__directions-text">
+                            This recipe was carefully designed and tested by
+                            <span class="recipe__publisher">${this.#data.publisher}</span>. Please check out
+                            directions at their website.
+                        </p>
+                        <a class="btn--small recipe__btn" href="${this.#data.sourceUrl}"target="_blank">
+                        <span>Directions</span>
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                      </a>
+                    </div>
+                ` ;
+            }
+        }
+        ```
+    - `STEP 3.3` : inside controller.js file , cut imported icons of loading spinner
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
+
+        const recipeContainer = document.querySelector('.recipe')
+
+        const timeout = function (s) => {
+            // put code of this function from STEP 1.3
+        }
+
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                console.log(id)
+
+                if (!id) return 
+                renderSpinner(recipeContainer)
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+                // const { recipe } = model.state // we don't need this line code 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                alert(err)
+            }
+        }
+
+        ['hashchange', 'load'].forEach((e) => window.addEventListener(e , controlRecipe)) 
+        ```
+        - inside recipeView.js , pasting import icons
+            ```js
+            import icons from 'url:../../img/icons.svg' 
+
+            class RecipeView {
+                #parentElement = document.querySelector('.recipe')
+                #data
+
+                render(data) {
+                    this.#data = data
+
+                    const markup = this.#generateMarkup
+                    this.#clear
+                    this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+                }
+
+                #clear() {
+                    this.#parentElement.innerHTML = '' 
+                }
+
+                renderSpinner = function() { 
+                    const markup = `
+                        <div class="spinner">
+                            <svg><use href="${icons}#icon-loader"></use></svg>
+                        </div>
+                    `
+
+                    this.#parentElement.innerHTML = ""
+                    this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+                }
+
+                // private method
+                #generateMarkup() {
+                    return `
+                        <figure class="recipe__fig">
+                            <img src="${this.#data.image}" alt="${this.#data.title}" class="recipe__img" />
+                            <h1 class="recipe__title">
+                              <span>${this.#data.title}</span>
+                            </h1>
+                        </figure>
+
+                        <div class="recipe__details">
+                            <div class="recipe__info">
+                                <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                                <span class="recipe__info-data recipe__info-data--minutes">${this.#data.cookingTime}</span>
+                                <span class="recipe__info-text">minutes</span>
+                            </div>
+                            <div class="recipe__info">
+                                <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                                <span class="recipe__info-data recipe__info-data--people">${this.#data.servings}</span>
+                                <span class="recipe__info-text">servings</span>
+
+                                <div class="recipe__info-buttons">
+                                    <button class="btn--tiny btn--increase-servings">
+                                      <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                                    </button>
+                                    <button class="btn--tiny btn--increase-servings">
+                                      <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="recipe__user-generated">
+                                <svg><use href="${icons}#icon-user"></use></svg>
+                            </div>
+                            <button class="btn--round">
+                                <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                            </button>
+                        </div>
+
+                        <div class="recipe__ingredients">
+                            <h2 class="heading--2">Recipe ingredients</h2>
+                            <ul class="recipe__ingredient-list">
+                                ${this.#data.ingredients.map(ing => {
+                                    return `
+                                        <li class="recipe__ingredient">
+                                            <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                                            <div class="recipe__quantity">${ing.quantity}</div>
+                                            <div class="recipe__description">
+                                                <span class="recipe__unit">${ing.unit}</span>
+                                                ${ing.description}
+                                            </div>
+                                        </li>
+                                    `
+                                }).join('')}
+                            </ul>
+                        </div>
+
+                        <div class="recipe__directions">
+                            <h2 class="heading--2">How to cook it</h2>
+                            <p class="recipe__directions-text">
+                                This recipe was carefully designed and tested by
+                                <span class="recipe__publisher">${this.#data.publisher}</span>. Please check out
+                                directions at their website.
+                            </p>
+                            <a class="btn--small recipe__btn" href="${this.#data.sourceUrl}"target="_blank">
+                            <span>Directions</span>
+                            <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                          </a>
+                        </div>
+                    ` ;
+                }
+            }
+            ```
+    - `STEP 3.4` : now inside controller.js file , call the `recipeView.renderSpinner()` 
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
+
+        const recipeContainer = document.querySelector('.recipe')
+
+        const timeout = function (s) => {
+            // put code of this function from STEP 1.3
+        }
+
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                console.log(id)
+
+                if (!id) return 
+                recipeView.renderSpinner()
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                alert(err)
+            }
+        }
+
+        ['hashchange', 'load'].forEach((e) => window.addEventListener(e , controlRecipe)) 
         ```
 
+- `STEP 4` : inside recipeView.js file , calling methods
+    ```js
+    import icons from 'url:../../img/icons.svg' 
 
+    class RecipeView {
+        #parentElement = document.querySelector('.recipe')
+        #data
 
+        render(data) {
+            this.#data = data
+            const markup = this.#generateMarkup()
+            this.#clear()
+            this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
 
+        #clear() {
+            this.#parentElement.innerHTML = '' 
+        }
+
+        renderSpinner = function() { 
+            const markup = `
+                <div class="spinner">
+                    <svg><use href="${icons}#icon-loader"></use></svg>
+                </div>
+            `
+
+            this.#parentElement.innerHTML = ""
+            this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
+
+        #generateMarkup() {
+            return `
+                <figure class="recipe__fig">
+                    <img src="${this.#data.image}" alt="${this.#data.title}" class="recipe__img" />
+                    <h1 class="recipe__title">
+                      <span>${this.#data.title}</span>
+                    </h1>
+                </figure>
+
+                <div class="recipe__details">
+                    <div class="recipe__info">
+                        <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                        <span class="recipe__info-data recipe__info-data--minutes">${this.#data.cookingTime}</span>
+                        <span class="recipe__info-text">minutes</span>
+                    </div>
+                    <div class="recipe__info">
+                        <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                        <span class="recipe__info-data recipe__info-data--people">${this.#data.servings}</span>
+                        <span class="recipe__info-text">servings</span>
+
+                        <div class="recipe__info-buttons">
+                            <button class="btn--tiny btn--increase-servings">
+                              <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                            </button>
+                            <button class="btn--tiny btn--increase-servings">
+                              <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="recipe__user-generated">
+                        <svg><use href="${icons}#icon-user"></use></svg>
+                    </div>
+                    <button class="btn--round">
+                        <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                    </button>
+                </div>
+
+                <div class="recipe__ingredients">
+                    <h2 class="heading--2">Recipe ingredients</h2>
+                    <ul class="recipe__ingredient-list">
+                        ${this.#data.ingredients.map(ing => {
+                            return `
+                                <li class="recipe__ingredient">
+                                    <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                                    <div class="recipe__quantity">${ing.quantity}</div>
+                                    <div class="recipe__description">
+                                        <span class="recipe__unit">${ing.unit}</span>
+                                        ${ing.description}
+                                    </div>
+                                </li>
+                            `
+                        }).join('')}
+                    </ul>
+                </div>
+
+                <div class="recipe__directions">
+                    <h2 class="heading--2">How to cook it</h2>
+                    <p class="recipe__directions-text">
+                        This recipe was carefully designed and tested by
+                        <span class="recipe__publisher">${this.#data.publisher}</span>. Please check out
+                        directions at their website.
+                    </p>
+                    <a class="btn--small recipe__btn" href="${this.#data.sourceUrl}"target="_blank">
+                    <span>Directions</span>
+                    <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                  </a>
+                </div>
+            ` ;
+        }
+    }
+    ```
+    - output : we'll get the proper output including spinner when we click on one recipe link to another
+    - now things which are missing i.e addHandlerRender() , etc which we'll do later on 
+    - on thing we want to change which has nothing to do with the architecture i.e  
+        ![change these decimal numbers](../notes-pics/18-module/8-lecture/lecture-8-0.jpg)
+        - so we want to change the 0.5 , but in working project & in real world , we have the ingredients like this
+        ![in real world](../notes-pics/18-module/8-lecture/lecture-8-1.jpg)
+        - so we have 1 1/2 & 1/2 instead of 0.5
+        - so for this , we'll use external library i.e `fractional NPM library`
+
+- `STEP 5` : using `fractional NPM library` to change the ingredients number of a recipe
+    - so run command `npm i fractional`
+    - inside recipeView.js file , importing the library
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+        import fractional from 'fractional' // here we can see that we didn't define the complete path
+            // because whenever we're importing any package from NPM
+                // then we don't even have to specify any path whenever we're using parcel
+                // we just need to specify name of the library as a path inside double or single quotes
+                    // & also as the name while importing (first see how they're exported)💡💡💡
+                // if we go to npmjs.com/package/fractional , then fractional library is imported as Fraction 💡💡💡
+                    // instead of importing as fractional which we did
+                    // & require() method is a old commonjs way of importing which is used by many npm packages
+
+        class RecipeView {
+            #parentElement = document.querySelector('.recipe')
+            #data
+
+            render(data) {
+                this.#data = data
+                const markup = this.#generateMarkup()
+                this.#clear()
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            #clear() {
+                this.#parentElement.innerHTML = '' 
+            }
+
+            renderSpinner = function() { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}#icon-loader"></use></svg>
+                    </div>
+                `
+
+                this.#parentElement.innerHTML = ""
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            #generateMarkup() {
+                return `
+                    <figure class="recipe__fig">
+                        <img src="${this.#data.image}" alt="${this.#data.title}" class="recipe__img" />
+                        <h1 class="recipe__title">
+                          <span>${this.#data.title}</span>
+                        </h1>
+                    </figure>
+
+                    <div class="recipe__details">
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--minutes">${this.#data.cookingTime}</span>
+                            <span class="recipe__info-text">minutes</span>
+                        </div>
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--people">${this.#data.servings}</span>
+                            <span class="recipe__info-text">servings</span>
+
+                            <div class="recipe__info-buttons">
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                                </button>
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="recipe__user-generated">
+                            <svg><use href="${icons}#icon-user"></use></svg>
+                        </div>
+                        <button class="btn--round">
+                            <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                        </button>
+                    </div>
+
+                    <div class="recipe__ingredients">
+                        <h2 class="heading--2">Recipe ingredients</h2>
+                        <ul class="recipe__ingredient-list">
+                            ${this.#data.ingredients.map(ing => {
+                                return `
+                                    <li class="recipe__ingredient">
+                                        <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                                        <div class="recipe__quantity">${ing.quantity}</div>
+                                        <div class="recipe__description">
+                                            <span class="recipe__unit">${ing.unit}</span>
+                                            ${ing.description}
+                                        </div>
+                                    </li>
+                                `
+                            }).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="recipe__directions">
+                        <h2 class="heading--2">How to cook it</h2>
+                        <p class="recipe__directions-text">
+                            This recipe was carefully designed and tested by
+                            <span class="recipe__publisher">${this.#data.publisher}</span>. Please check out
+                            directions at their website.
+                        </p>
+                        <a class="btn--small recipe__btn" href="${this.#data.sourceUrl}"target="_blank">
+                        <span>Directions</span>
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                      </a>
+                    </div>
+                ` ;
+            }
+        }
+        ```
+    - `STEP 5.1` : importing the fraction library inside recipeView.js & implementing 
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+        import { Fraction }  from 'fractional' 
+        console.log(Fraction) // output : we'll get the output properly means importing the library is working
+            // so we'll get fraction inside fraction 
+            // that's why if we want to convert a decimal number into fraction 
+                // then we use -> new Fraction.Fraction , but we used object destructuring while importing
+                // so that we don't have to use fraction like this -> new Fraction.Fraction 💡💡💡
+
+        class RecipeView {
+            #parentElement = document.querySelector('.recipe')
+            #data
+
+            render(data) {
+                this.#data = data
+                const markup = this.#generateMarkup()
+                this.#clear()
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            #clear() {
+                this.#parentElement.innerHTML = '' 
+            }
+
+            renderSpinner = function() { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}#icon-loader"></use></svg>
+                    </div>
+                `
+
+                this.#parentElement.innerHTML = ""
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            #generateMarkup() {
+                return `
+                    <figure class="recipe__fig">
+                        <img src="${this.#data.image}" alt="${this.#data.title}" class="recipe__img" />
+                        <h1 class="recipe__title">
+                          <span>${this.#data.title}</span>
+                        </h1>
+                    </figure>
+
+                    <div class="recipe__details">
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--minutes">${this.#data.cookingTime}</span>
+                            <span class="recipe__info-text">minutes</span>
+                        </div>
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--people">${this.#data.servings}</span>
+                            <span class="recipe__info-text">servings</span>
+
+                            <div class="recipe__info-buttons">
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                                </button>
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="recipe__user-generated">
+                            <svg><use href="${icons}#icon-user"></use></svg>
+                        </div>
+                        <button class="btn--round">
+                            <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                        </button>
+                    </div>
+
+                    <div class="recipe__ingredients">
+                        <h2 class="heading--2">Recipe ingredients</h2>
+                        <ul class="recipe__ingredient-list">
+                            ${this.#data.ingredients.map(ing => {
+                                return `
+                                    <li class="recipe__ingredient">
+                                        <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                                        <div class="recipe__quantity">${new Fraction(ing.quantity).toString()}</div>
+                                        <div class="recipe__description">
+                                            <span class="recipe__unit">${ing.unit}</span>
+                                            ${ing.description}
+                                        </div>
+                                    </li>
+                                `
+                            }).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="recipe__directions">
+                        <h2 class="heading--2">How to cook it</h2>
+                        <p class="recipe__directions-text">
+                            This recipe was carefully designed and tested by
+                            <span class="recipe__publisher">${this.#data.publisher}</span>. Please check out
+                            directions at their website.
+                        </p>
+                        <a class="btn--small recipe__btn" href="${this.#data.sourceUrl}"target="_blank">
+                        <span>Directions</span>
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                      </a>
+                    </div>
+                ` ;
+            }
+        }
+        ```
+        - output : we'll get the recipe ingredients in fraction value instead of decimal point
+            - but we're getting NaN in some point of a recipe ingredients section , so we'll use ternary operator
+    - `STEP 5.2` : using recipeView.js file , using ternary operator to remove the NaN error
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+        import { Fraction }  from 'fractional' 
+
+        class RecipeView {
+            #parentElement = document.querySelector('.recipe')
+            #data
+
+            render(data) {
+                this.#data = data
+                const markup = this.#generateMarkup()
+                this.#clear()
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            #clear() {
+                this.#parentElement.innerHTML = '' 
+            }
+
+            renderSpinner = function() { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}#icon-loader"></use></svg>
+                    </div>
+                `
+
+                this.#parentElement.innerHTML = ""
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            #generateMarkup() {
+                return `
+                    <figure class="recipe__fig">
+                        <img src="${this.#data.image}" alt="${this.#data.title}" class="recipe__img" />
+                        <h1 class="recipe__title">
+                          <span>${this.#data.title}</span>
+                        </h1>
+                    </figure>
+
+                    <div class="recipe__details">
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--minutes">${this.#data.cookingTime}</span>
+                            <span class="recipe__info-text">minutes</span>
+                        </div>
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--people">${this.#data.servings}</span>
+                            <span class="recipe__info-text">servings</span>
+
+                            <div class="recipe__info-buttons">
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                                </button>
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="recipe__user-generated">
+                            <svg><use href="${icons}#icon-user"></use></svg>
+                        </div>
+                        <button class="btn--round">
+                            <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                        </button>
+                    </div>
+
+                    <div class="recipe__ingredients">
+                        <h2 class="heading--2">Recipe ingredients</h2>
+                        <ul class="recipe__ingredient-list">
+                            ${this.#data.ingredients.map(ing => {
+                                return `
+                                    <li class="recipe__ingredient">
+                                        <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                                        <div class="recipe__quantity">${ing.quantity ? Fraction(ing.quantity).toString() : ""}</div>
+                                        <div class="recipe__description">
+                                            <span class="recipe__unit">${ing.unit}</span>
+                                            ${ing.description}
+                                        </div>
+                                    </li>
+                                `
+                            }).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="recipe__directions">
+                        <h2 class="heading--2">How to cook it</h2>
+                        <p class="recipe__directions-text">
+                            This recipe was carefully designed and tested by
+                            <span class="recipe__publisher">${this.#data.publisher}</span>. Please check out
+                            directions at their website.
+                        </p>
+                        <a class="btn--small recipe__btn" href="${this.#data.sourceUrl}"target="_blank">
+                        <span>Directions</span>
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                      </a>
+                    </div>
+                ` ;
+            }
+        }
+        ```
+    - `STEP 5.3` : refactoring the code of recipeView.js file 
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+        import { Fraction }  from 'fractional' 
+
+        class RecipeView {
+            #parentElement = document.querySelector('.recipe')
+            #data
+
+            render(data) {
+                this.#data = data
+                const markup = this.#generateMarkup()
+                this.#clear()
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            #clear() {
+                this.#parentElement.innerHTML = '' 
+            }
+
+            renderSpinner = function() { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}#icon-loader"></use></svg>
+                    </div>
+                `
+
+                this.#parentElement.innerHTML = ""
+                this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            #generateMarkup() {
+                return `
+                    <figure class="recipe__fig">
+                        <img src="${this.#data.image}" alt="${this.#data.title}" class="recipe__img" />
+                        <h1 class="recipe__title">
+                          <span>${this.#data.title}</span>
+                        </h1>
+                    </figure>
+
+                    <div class="recipe__details">
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--minutes">${this.#data.cookingTime}</span>
+                            <span class="recipe__info-text">minutes</span>
+                        </div>
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--people">${this.#data.servings}</span>
+                            <span class="recipe__info-text">servings</span>
+
+                            <div class="recipe__info-buttons">
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                                </button>
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="recipe__user-generated">
+                            <svg><use href="${icons}#icon-user"></use></svg>
+                        </div>
+                        <button class="btn--round">
+                            <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                        </button>
+                    </div>
+
+                    <div class="recipe__ingredients">
+                        <h2 class="heading--2">Recipe ingredients</h2>
+                        <ul class="recipe__ingredient-list">
+                            ${this.#data.ingredients.map(this.#generateMarkupIngredient).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="recipe__directions">
+                        <h2 class="heading--2">How to cook it</h2>
+                        <p class="recipe__directions-text">
+                            This recipe was carefully designed and tested by
+                            <span class="recipe__publisher">${this.#data.publisher}</span>. Please check out
+                            directions at their website.
+                        </p>
+                        <a class="btn--small recipe__btn" href="${this.#data.sourceUrl}"target="_blank">
+                        <span>Directions</span>
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                      </a>
+                    </div>
+                ` ;
+            }
+
+            #generateMarkupIngredient(ing) {
+                return `
+                    <li class="recipe__ingredient">
+                        <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                        <div class="recipe__quantity">${ing.quantity ? Fraction(ing.quantity).toString() : ""}</div>
+                        <div class="recipe__description">
+                            <span class="recipe__unit">${ing.unit}</span>
+                            ${ing.description}
+                        </div>
+                    </li>
+                `
+            }
+        }
+        ```
+
+## conclusion
+
+- this is really really important lecture & understand
+    - [x] make sure to review all the code 
+    - [x] & see the flow chart of recipe loading to understand which functions we call when & how exactly data flows <br>  
+        b/w those different functions , especially inside recipeView.js file 
+    - [x] understand things clearly before moving to next lecture otherwise further lecture become difficult
+
+- this is the foundation lecture of this project
