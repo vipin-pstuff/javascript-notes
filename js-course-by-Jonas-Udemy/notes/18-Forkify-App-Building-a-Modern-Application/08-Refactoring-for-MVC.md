@@ -344,33 +344,505 @@
         // & later on , we'll create a parent class called view 
             // which will contain a couple of methods & all child views should inherit
         // so we're using classes to make implementation easier
-        
-    class RecipeView extends View {
-        _parentElement = document.querySelector('.recipe');
-        _errorMessage = 'We could not find that recipe. Please try another one!';
-        _message = '';
 
-        addHandlerRender(handler) {
-          ['hashchange', 'load'].forEach(ev => window.addEventListener(ev, handler));
+    class RecipeView extends View {
+        // private properties
+        #parentElement = document.querySelector('.recipe') 
+            // we'll set this private element to the recipeContainer (which is inside the controller.js file) 
+            // because this will make really easy to render the spinner & to render success or error messages
+    }
+    ```
+    - `STEP 2.1` : now exporting this RecipeView class
+        - then in the controller.js file , we would have to import that class <br>
+            & create a new object out of that class
+        - means create a new RecipeView object . However , in that situation , it might be possible <br>
+            to create more than one view but we never want that & it'll add unnecessary work for the controller.js file <br>
+            so keep controller.js file as simple as possible
+        - Now in order to avoid all that , we will create the object inside the recipeView.js file & then export that object & <br>
+            due to this , no one from the outside can access `RecipeView` class except that object which we're exporting 💡💡💡
+        - inside recipeView.js file 
+            ```js
+            class RecipeView extends View {
+                // private properties
+                #parentElement = document.querySelector('.recipe') 
+            }
+
+            export default new RecipeView() // here we didn't pass any data 
+                // that's why we don't need constructor() function inside RecipeView class 💡💡💡
+            ```
+        - inside controller.js file , importing RecipeView class
+            ```js
+            import * as model from './model.js' 
+            import recipeView from './views/recipeView.js'
+                // now you'll think how we can pass any data into the recipeView object
+                // because if we're not creating the new object ourselves then we can't pass any data
+                    // in like for the constructor function
+                // because we're creating that object in the RecipeView module
+                    // but we did this for the purpose , so that we can create a very nice method called render 💡💡💡
+
+            import icons from 'url:../img/icons.svg' 
+
+            import 'core-js/stable' 
+            import 'regenerator-runtime/runtime' 
+
+            const recipeContainer = document.querySelector('.recipe')
+
+            const timeout = function (s) => {
+                // put code of this function from STEP 1.3
+            }
+
+            const renderSpinner = function(parentEl) { 
+                // put code of this function from STEP 1.3
+            }
+
+            const showRecipe = async function() {
+                try {
+                    const id = window.location.hash.slice(1)
+                    console.log(id)
+
+                    if (!id) return 
+                    renderSpinner(recipeContainer)
+
+                    // 1 - Loading recipe
+                    await model.loadRecipe(id) 
+
+                    const { recipe } = model.state
+                        // now we can access state -> object
+
+                    // 2 - Rendering recipe
+                    recipeView.render(model.state.recipe)
+                        // here we can pass the data inside render() method which we'll create
+                        // render -> is a very common name for methods like in React , it's also called render 💡💡💡
+                            // & this is descriptive name of what is going to happens
+                        // but we can do this way also -> const recipeView = new recipeView(model.state.recipe)
+                            // but this is lot cleaner -> recipeView.render(model.state.recipe) 💡💡💡
+
+
+                    const markup = `// put code from STEP 1.5`
+
+                recipeContainer.innerHTML = ""
+                recipeContainer.insertAdjacentHTML('afterbegin', markup)
+
+                } catch(err) {
+                    alert(err)
+                }
+            }
+
+            ['hashchange', 'load'].forEach((e) => { 
+                window.addEventListener(e , showRecipe)
+            }) 
+            ```
+    - `STEP 2.2` : inside recipeView.js file , accepting `recipeView.render(model.state.recipe)` this data
+        - & then store it inside that object
+        ```js
+        class RecipeView extends View {
+            // private properties
+            #parentElement = document.querySelector('.recipe') 
+            #data
+
+            // public method which is a part of public API
+            render(data) {
+                // this will receives data & then set this.#data
+                this.#data = data
+            }
+            // here #parentElement & #data & render() method will be created inside all the views 
+                // & this is good thing to keep things consistence through out the application
         }
 
-        addHandlerUpdateServings(handler) {
-            this._parentElement.addEventListener('click', function (e) {
-                const btn = e.target.closest('.btn--update-servings');
-                if (!btn) return;
-                const { updateTo } = btn.dataset;
-                if (+updateTo > 0) handler(+updateTo);
-            });
-          
-            addHandlerAddBookmark(handler) {
-              this._parentElement.addEventListener('click', function (e) {
-                const btn = e.target.closest('.btn--bookmark');
-                if (!btn) return;
-                handler();
-            });
+        export default new RecipeView()
+        ```
+    - `STEP 2.3` : inside controller.js file , cut that markup code & appending inside the DOM 
+        ```js
+        const markup = `
+            <figure class="recipe__fig">
+                <img src="${recipe.image}" alt="${recipe.title}" class="recipe__img" />
+                <h1 class="recipe__title">
+                  <span>${recipe.title}</span>
+                </h1>
+            </figure>
+
+            <div class="recipe__details">
+                <div class="recipe__info">
+                    <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                    <span class="recipe__info-data recipe__info-data--minutes">${recipe.cookingTime}</span>
+                    <span class="recipe__info-text">minutes</span>
+                </div>
+                <div class="recipe__info">
+                    <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                    <span class="recipe__info-data recipe__info-data--people">${recipe.servings}</span>
+                    <span class="recipe__info-text">servings</span>
+
+                    <div class="recipe__info-buttons">
+                        <button class="btn--tiny btn--increase-servings">
+                          <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                        </button>
+                        <button class="btn--tiny btn--increase-servings">
+                          <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="recipe__user-generated">
+                    <svg><use href="${icons}#icon-user"></use></svg>
+                </div>
+                <button class="btn--round">
+                    <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                </button>
+            </div>
+
+            <div class="recipe__ingredients">
+                <h2 class="heading--2">Recipe ingredients</h2>
+                <ul class="recipe__ingredient-list">
+                    ${recipe.ingredients.map(ing => {
+                        return `
+                            <li class="recipe__ingredient">
+                                <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                                <div class="recipe__quantity">${ing.quantity}</div>
+                                <div class="recipe__description">
+                                    <span class="recipe__unit">${ing.unit}</span>
+                                    ${ing.description}
+                                </div>
+                            </li>
+                        `
+                    }).join('')}
+                </ul>
+            </div>
+
+            <div class="recipe__directions">
+                <h2 class="heading--2">How to cook it</h2>
+                <p class="recipe__directions-text">
+                    This recipe was carefully designed and tested by
+                    <span class="recipe__publisher">${recipe.publisher}</span>. Please check out
+                    directions at their website.
+                </p>
+                <a class="btn--small recipe__btn" href="${recipe.sourceUrl}"target="_blank">
+                <span>Directions</span>
+                <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+              </a>
+            </div>
+        `
+
+        recipeContainer.innerHTML = ""
+        recipeContainer.insertAdjacentHTML('afterbegin', markup)
+        ```
+        - & put this inside the recipeView.js file like this
+            ```js
+            class RecipeView {
+                #parentElement = document.querySelector('.recipe')
+                #data
+
+                render(data) {
+                    this.#data = data
+                }
+            }
+
+            export default new RecipeView()
+            ```
+            - now we'll not put the markup code & rendering it inside render() method <br>
+                because again , render() will later be common to all the views means to all the classes
+            - However , each view , of course , render different HTML <br>
+                so we'll create a method that generates that HTML , so that render() method can then render that HTML 💡💡💡
+    - `STEP 2.4` : inside recipeView.js file
+        ```js
+        class RecipeView {
+            // private properties
+            #parentElement = document.querySelector('.recipe')
+            #data
+
+            render(data) {
+                this.#data = data
+            }
+
+            // private method
+            #generateMarkup() {
+                return `
+                    <figure class="recipe__fig">
+                        <img src="${recipe.image}" alt="${recipe.title}" class="recipe__img" />
+                        <h1 class="recipe__title">
+                          <span>${recipe.title}</span>
+                        </h1>
+                    </figure>
+
+                    <div class="recipe__details">
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--minutes">${recipe.cookingTime}</span>
+                            <span class="recipe__info-text">minutes</span>
+                        </div>
+                        <div class="recipe__info">
+                            <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                            <span class="recipe__info-data recipe__info-data--people">${recipe.servings}</span>
+                            <span class="recipe__info-text">servings</span>
+
+                            <div class="recipe__info-buttons">
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                                </button>
+                                <button class="btn--tiny btn--increase-servings">
+                                  <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="recipe__user-generated">
+                            <svg><use href="${icons}#icon-user"></use></svg>
+                        </div>
+                        <button class="btn--round">
+                            <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                        </button>
+                    </div>
+
+                    <div class="recipe__ingredients">
+                        <h2 class="heading--2">Recipe ingredients</h2>
+                        <ul class="recipe__ingredient-list">
+                            ${recipe.ingredients.map(ing => {
+                                return `
+                                    <li class="recipe__ingredient">
+                                        <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                                        <div class="recipe__quantity">${ing.quantity}</div>
+                                        <div class="recipe__description">
+                                            <span class="recipe__unit">${ing.unit}</span>
+                                            ${ing.description}
+                                        </div>
+                                    </li>
+                                `
+                            }).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="recipe__directions">
+                        <h2 class="heading--2">How to cook it</h2>
+                        <p class="recipe__directions-text">
+                            This recipe was carefully designed and tested by
+                            <span class="recipe__publisher">${recipe.publisher}</span>. Please check out
+                            directions at their website.
+                        </p>
+                        <a class="btn--small recipe__btn" href="${recipe.sourceUrl}"target="_blank">
+                        <span>Directions</span>
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                      </a>
+                    </div>
+                ` ;
+
+                recipeContainer.innerHTML = ""
+                recipeContainer.insertAdjacentHTML('afterbegin', markup)
+            }
+        }
+        ```
+        - now inside `#generateMarkup` , we immediately return that html code instead of storing inside a variable <br>
+            & then returning that variable
+        - now `#generateMarkup` can't do anything because we need to define what that `recipe` means & it's not define <br>
+            so data is actually inside `this.#data`
+        - so if we go inside controller.js file , these lines of code 
+            ```js
+            import * as model from './model.js' 
+            import recipeView from './views/recipeView.js'
+
+            import icons from 'url:../img/icons.svg' 
+
+            import 'core-js/stable' 
+            import 'regenerator-runtime/runtime' 
+
+            const recipeContainer = document.querySelector('.recipe')
+
+            const timeout = function (s) => {
+                // put code of this function from STEP 1.3
+            }
+
+            const renderSpinner = function(parentEl) { 
+                // put code of this function from STEP 1.3
+            }
+
+            const showRecipe = async function() {
+                try {
+                    const id = window.location.hash.slice(1)
+                    console.log(id)
+
+                    if (!id) return 
+                    renderSpinner(recipeContainer)
+
+                    // 1 - Loading recipe
+                    await model.loadRecipe(id) 
+                    // const { recipe } = model.state // we don't need this line code 
+
+                    // 2 - Rendering recipe
+                    recipeView.render(model.state.recipe)
+
+                    // const markup = `// put code from STEP 1.5` // we don't need this line code 
+
+                recipeContainer.innerHTML = ""
+                recipeContainer.insertAdjacentHTML('afterbegin', markup)
+
+                } catch(err) {
+                    alert(err)
+                }
+            }
+
+            ['hashchange', 'load'].forEach((e) => { 
+                window.addEventListener(e , showRecipe)
+            }) 
+            ```
+            - `understanding flow of code that we just wrote` :  
+                - inside controller.js file 
+                    - so on this line `await model.loadRecipe(id)` here we loaded the recipe <br>
+                        & then we store/took that loaded recipe by accessing `model.state.recipe` object
+                    - so we received the data on this line `await model.loadRecipe(id)` & then we putted <br>
+                        inside the render() method i.e `recipeView.render(model.state.recipe)`
+                - then inside recipeView.js file 
+                    - that render() method takes that data & stores it inside `this.#data` 
+                    - so we can use that data via `#data` private properties anywhere
+                - if we see the flowchart of loading recipe , we're doing the same thing 
+                    - so `controlRecipes()` (of controller.js file) will call the loadRecipe() (of model.js file) 
+                    - then the recipe data goes into the state & then `recipe` object will be passes <br>
+                        through the controller.js file & then ultimately goes inside `render()` method (of recipeView.js file) 
+                    - then render() method (of recipeView.js file) will call `generateMarkup()`  
+
+- `STEP 3` : inside recipeView.js file , refactoring the code to pass the data
+    ```js
+    class RecipeView {
+        // private properties
+        #parentElement = document.querySelector('.recipe')
+        #data
+
+        render(data) {
+            this.#data = data
+
+            const markup = this.#generateMarkup
+            this.#clear
+            this.#parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
+
+        #clear() {
+            // this private is created to abstract some code 
+
+            this.#parentElement.innerHTML = '' 
+                // here we made the #parentElement private variable reusable variable 💡💡💡 
+        }
+
+        // private method
+        #generateMarkup() {
+            return `
+                <figure class="recipe__fig">
+                    <img src="${this.#data.image}" alt="${this.#data.title}" class="recipe__img" />
+                    <h1 class="recipe__title">
+                      <span>${this.#data.title}</span>
+                    </h1>
+                </figure>
+
+                <div class="recipe__details">
+                    <div class="recipe__info">
+                        <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                        <span class="recipe__info-data recipe__info-data--minutes">${this.#data.cookingTime}</span>
+                        <span class="recipe__info-text">minutes</span>
+                    </div>
+                    <div class="recipe__info">
+                        <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                        <span class="recipe__info-data recipe__info-data--people">${this.#data.servings}</span>
+                        <span class="recipe__info-text">servings</span>
+
+                        <div class="recipe__info-buttons">
+                            <button class="btn--tiny btn--increase-servings">
+                              <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                            </button>
+                            <button class="btn--tiny btn--increase-servings">
+                              <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="recipe__user-generated">
+                        <svg><use href="${icons}#icon-user"></use></svg>
+                    </div>
+                    <button class="btn--round">
+                        <svg class=""><use href="${icons}#icon-bookmark-fill"></use></svg>
+                    </button>
+                </div>
+
+                <div class="recipe__ingredients">
+                    <h2 class="heading--2">Recipe ingredients</h2>
+                    <ul class="recipe__ingredient-list">
+                        ${this.#data.ingredients.map(ing => {
+                            return `
+                                <li class="recipe__ingredient">
+                                    <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                                    <div class="recipe__quantity">${ing.quantity}</div>
+                                    <div class="recipe__description">
+                                        <span class="recipe__unit">${ing.unit}</span>
+                                        ${ing.description}
+                                    </div>
+                                </li>
+                            `
+                        }).join('')}
+                    </ul>
+                </div>
+
+                <div class="recipe__directions">
+                    <h2 class="heading--2">How to cook it</h2>
+                    <p class="recipe__directions-text">
+                        This recipe was carefully designed and tested by
+                        <span class="recipe__publisher">${this.#data.publisher}</span>. Please check out
+                        directions at their website.
+                    </p>
+                    <a class="btn--small recipe__btn" href="${this.#data.sourceUrl}"target="_blank">
+                    <span>Directions</span>
+                    <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                  </a>
+                </div>
+            ` ;
+
+            // recipeContainer.innerHTML = ""
+            // recipeContainer.insertAdjacentHTML('afterbegin', markup)
+                // these lines of code will not be defined inside #generateMarkup() function
+                    // because this function only return an HTML string
+                // but both these lines will go inside render() method 💡💡💡
         }
     }
     ```
+    - `STEP 3.1` : inside controller.js file , change the name of showRecipe into controlRecipe
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+
+        import icons from 'url:../img/icons.svg' 
+
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
+
+        const recipeContainer = document.querySelector('.recipe')
+
+        const timeout = function (s) => {
+            // put code of this function from STEP 1.3
+        }
+
+        const renderSpinner = function(parentEl) { 
+            // put code of this function from STEP 1.3
+        }
+
+        const showRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                console.log(id)
+
+                if (!id) return 
+                renderSpinner(recipeContainer)
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+                // const { recipe } = model.state // we don't need this line code 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                alert(err)
+            }
+        }
+
+        ['hashchange', 'load'].forEach((e) => { 
+            window.addEventListener(e , showRecipe)
+        }) 
+        ```
+
 
 
 
