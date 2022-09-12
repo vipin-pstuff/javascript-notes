@@ -1691,7 +1691,7 @@
 
 - this is really really important lecture & understand
     - [x] make sure to review all the code 
-    - [x] & see the flow chart of recipe loading to understand which functions we call when & how exactly data flows <br>  
+    - [x] & see the flow chart of recipe loading to understand which functions we call when & how exactly data flows <br>
         b/w those different functions , especially inside recipeView.js file 
     - [x] understand things clearly before moving to next lecture otherwise further lecture become difficult
 
