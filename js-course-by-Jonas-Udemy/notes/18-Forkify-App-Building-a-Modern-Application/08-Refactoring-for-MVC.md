@@ -419,7 +419,6 @@
                         // but we can do this way also -> const recipeView = new recipeView(model.state.recipe)
                             // but this is lot cleaner -> recipeView.render(model.state.recipe) 💡💡💡
 
-
                     const markup = `// put code from STEP 1.5`
 
                 recipeContainer.innerHTML = ""
