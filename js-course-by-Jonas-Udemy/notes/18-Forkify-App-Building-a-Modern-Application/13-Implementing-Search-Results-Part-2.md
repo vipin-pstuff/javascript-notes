@@ -864,12 +864,307 @@
 - `STEP 7` : inside resultsView.js file , looping over the this._data 
     - because we don't want to return pre-defined hard coded html markup 
     ```js
-    
+    import View from './View.js'
+
+    class ResultsView extends View {
+        _parentElement = document.querySelector('.results')
+
+        _generateMarkup() {
+            return this._data.map(this._generateMarkupPreview).join("")
+        }
+
+        _generateMarkupPreview() {
+            return ` 
+                <li class="preview">
+                    <a class="preview__link preview__link--active" href="#23456">
+                        <figure class="preview__fig">
+                            <img src="src/img/test-1.jpg" alt="Test" />
+                        </figure>
+                        <div class="preview__data">
+                            <h4 class="preview__title">Pasta with Tomato Cream ...</h4>
+                            <p class="preview__publisher">The Pioneer Woman</p>
+                            <div class="preview__user-generated">
+                                <svg><use href="src/img/icons.svg#icon-user"></use></svg>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+            `
+        }
+    }
+
+    export default new ResultsView() 
     ```
+    - output : when search of pizza & hit ENTER key
+        - then we'll get the items on the left side section with (59) results of pizza
+    - `STEP 7.1` : inside resultsView.js file , inserting actual data
+        ```js
+        import View from './View.js'
+        import icons from 'url:../../img/icons.svg' 
 
+        class ResultsView extends View {
+            _parentElement = document.querySelector('.results')
 
-✔️✔️✔️
-💡💡💡
-✅
-🔥
+            _generateMarkup() {
+                return this._data.map(this._generateMarkupPreview).join("")
+            }
 
+            _generateMarkupPreview(result) {
+                return ` 
+                    <li class="preview">
+                        <a class="preview__link preview__link--active" href="#${result.id}">
+                            <figure class="preview__fig">
+                                <img src="${result.image}" alt="Test" />
+                            </figure>
+                            <div class="preview__data">
+                                <h4 class="preview__title">${result.title}</h4>
+                                <p class="preview__publisher">${result.publisher}</p>
+                                <div class="preview__user-generated">
+                                    <svg><use href="${icons}#icon-user"></use></svg>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                `
+            }
+        }
+
+        export default new ResultsView() 
+        ```
+        - output : when we search pizza & then hit ENTER then we'll get the (59) results with actual data
+            - & when we click any of them then it'll render on right side of the section
+        - now let's fix the person icon & all of them shouldn't be highlighted like this 
+            ![fixing the issue](../notes-pics/18-module/13-lecture/lecture-13-2.jpg)
+    - `STEP 7.2` : inside resultsView.js file ,
+        - fixing two problems i.e person icon & on that item should be highlighted not all of them 
+        ```js
+        import View from './View.js'
+        import icons from 'url:../../img/icons.svg' 
+
+        class ResultsView extends View {
+            _parentElement = document.querySelector('.results')
+
+            _generateMarkup() {
+                return this._data.map(this._generateMarkupPreview).join("")
+            }
+
+            _generateMarkupPreview(result) {
+                return ` 
+                    <li class="preview">
+                        <a class="preview__link" href="#${result.id}">
+                            <figure class="preview__fig">
+                                <img src="${result.image}" alt="${result.title}" />
+                            </figure>
+                            <div class="preview__data">
+                                <h4 class="preview__title">${result.title}</h4>
+                                <p class="preview__publisher">${result.publisher}</p>
+                            </div>
+                        </a>
+                    </li>
+                `
+            }
+        }
+
+        export default new ResultsView() 
+        ```
+        - output : now if we change the file & check the output then all those items will gone 
+            - so we need to use hot module of parcel to persist the data
+        - `STEP 7.2.1` : using hot module reload of parcel to persist the data 
+            - in order to persist the data while doing testing 
+            - inside controller.js file 
+                ```js
+                import * as model from './model.js' 
+                import recipeView from './views/recipeView.js'
+                import searchView from './views/searchView.js'
+                import resultsView from './views/resultsView.js'
+
+                import 'core-js/stable' 
+                import 'regenerator-runtime/runtime' 
+
+                // hot module reload of parcel
+                if (module.hot) {
+                    module.hot.accept()
+                }
+
+                const timeout = function (s) => {
+                    return new Promise(function (_, reject) {
+                        setTimeout(function() {
+                            reject(new Error(`Request took too long! Timeout after ${s} second`))
+                        }, s * 1000)
+                    })
+                }
+
+                const controlRecipe = async function() {
+                    try {
+                        const id = window.location.hash.slice(1)
+                        if (!id) return 
+
+                        resultsView.renderSpinner()
+
+                        // 1 - Loading recipe
+                        await model.loadRecipe(id) 
+
+                        // 2 - Rendering recipe
+                        recipeView.render(model.state.recipe)
+
+                    } catch(err) {
+                        recipeView.renderError() 
+                    }
+                }
+
+                const controlSearchResults = async function() {
+                    try {
+                        resultsView.renderSpinner()
+
+                        // 1) Get search query
+                        const query = searchView.getQuery()
+                        if (!query) return
+
+                        // 2) load search results
+                        await model.loadSearchResults(query) 
+
+                        // 3) Render results
+                        resultsView.render(model.state.search.results)
+                    } catch(err) {
+                        console.log(err)
+                    }
+                }
+
+                controlSearchResults()
+
+                const init = function() {
+                    recipeView.addHandlerRender(controlRecipes)
+                    searchView.addHandlerSearch(controlSearchResults)
+                }
+                init()
+                ```
+            - & from the index.html file , delete these testing links 
+                ![deleting those testing links](../notes-pics/18-module/13-lecture/lecture-13-3.jpg)
+        - output : now if we change the file then those searched items will remain same on the left side 
+            - but on right side of a item , again that person icon is coming 
+                ![deleting those testing links](../notes-pics/18-module/13-lecture/lecture-13-4.jpg)
+            - so we need to delete it from recipeView.js file 
+    - `STEP 7.3` : inside recipeView.js file , removing this person icon svg html markup code
+        - but don't delete the div of `recipe__user-generated` class
+        ```
+        <svg><use href="${icons}#icon-user"></use></svg>
+        ```
+        - output : after removing this svg , we'll get this output
+            ![output after removing the svg person icon](../notes-pics/18-module/13-lecture/lecture-13-5.jpg)
+            - now if we search something like wrong stuff like this `sdklfjdklsf` <br>
+                then on left side spinner loading come for a second & gone <br>
+                but on the console tab , we'll get `{status: "success", results: 0, data: {...}}` <br>
+                so inside `data` property , `recipes` property will contain empty array
+            - so in this case , we want to show the error message 
+
+- `STEP 8` : inside resultsView.js file , showing the error message when we don't have the result of that searched query
+    ```js
+    import View from './View.js'
+    import icons from 'url:../../img/icons.svg' 
+
+    class ResultsView extends View {
+        _parentElement = document.querySelector('.results')
+        _errorMessage = 'No recipes found for your query! Please try again :-D'
+        _message = ""
+
+        _generateMarkup() {
+            return this._data.map(this._generateMarkupPreview).join("")
+        }
+
+        _generateMarkupPreview(result) {
+            return ` 
+                <li class="preview">
+                    <a class="preview__link" href="#${result.id}">
+                        <figure class="preview__fig">
+                            <img src="${result.image}" alt="${result.title}" />
+                        </figure>
+                        <div class="preview__data">
+                            <h4 class="preview__title">${result.title}</h4>
+                            <p class="preview__publisher">${result.publisher}</p>
+                        </div>
+                    </a>
+                </li>
+            `
+        }
+    }
+
+    export default new ResultsView() 
+    ```
+    - now inside resultsView.js file , we need to check if the array is empty & if it is so then render the _errorMessage <br>
+        However , we can also do that directly in the render() method of View.js file <br>
+        as soon as we receive the data 💡💡💡 
+    - `STEP 8.1` : inside View.js file , when the render() method is called 
+        - & receives the data for the first time , then we can immediately check if that data actually exists
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+
+        export default class View {
+            _data ; 
+
+            render(data) {
+                if (!data || (Array.isArray(data) && data.length === 0)) return this.renderError()
+                    // here we didn't need to pass any message
+                        // because we already automatically get the message from renderError() function below
+                    // !data ---> this will check for null or undefined , not for empty array 💡💡💡
+                        // that's why we need another condition check
+                    // if (!data || (Array.isArray(data) && data.length === 0))
+                        // here Array.isArray() method used to check whether that data is an array or not 💡💡💡
+
+                this._data = data
+                const markup = this._generateMarkup()
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            _clear() {
+                this._parentElement.innerHTML = '' 
+            }
+
+            renderSpinner() { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}_icon-loader"></use></svg>
+                    </div>
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            renderError(message = this._errorMessage) {
+                const markup = `
+                    <div class="error">
+                        <div>
+                            <svg><use href="${icons}_icon-alert-triangle"></use></svg>
+                        </div>
+                        <p>${message}</p>
+                    </div> 
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            renderMessage(message = this._message) {
+                const markup = `
+                    <div class="message">
+                        <div>
+                            <svg><use href="${icons}_icon-smile"></use></svg>
+                        </div>
+                        <p>${message}</p>
+                    </div> 
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+        }
+        ```
+        - output : if we search for pizza then we'll get all those items on left side 
+            - but if we check for unknown item like `sdlkjsd` then we'll get the error on left side like this
+            ![output](../notes-pics/18-module/13-lecture/lecture-13-6.jpg)
+
+- so if we see the flowchart of forkify part1 , so we successfully implemented the event for user searches , <br>
+    load search results asynchronously & then render search results on the UI
+
+- in next lecture , we'll fix the issue of those (59) results , so we'll implement pagination
