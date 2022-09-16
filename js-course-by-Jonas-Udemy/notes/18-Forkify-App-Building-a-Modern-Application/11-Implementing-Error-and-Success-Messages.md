@@ -483,7 +483,7 @@
 
 - `STEP 5` : let's implement the success message also
     - right now we don't need this , but good for the future
-    - inside reviewView.js file 
+    - inside recipeView.js file 
         ```js
         import icons from 'url:../../img/icons.svg' 
         import { Fraction }  from 'fractional' 
