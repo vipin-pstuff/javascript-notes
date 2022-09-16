@@ -407,11 +407,330 @@
 - `STEP 5` : inside `views` folder , create a folder as searchView.js file 
     - inside searchView.js file 
         ```js
+        class SearchView {
+            // this class is not going to render anything , we just want to get the query 
+                // & eventually to also listen for the click -> event on the button
 
+            #parentEl = document.querySelector('.search') // here we just define parent element 
+                // just like we did in recipeView.js file
+
+            getQuery() {
+                return this.#parentEl.querySelector('.search__field').value
+            }
+        }
+
+        export default new SearchView() 
+
+        // & of course , we can write this exact same code in a controller.js file 
+            // but that wouldn't make any sense because controller.js file is not concerned about the DOM
+            // that's why we don't want to have any DOM elements inside controller.js file 
+                // & even we don't want to know what the DOM looks like 💡💡💡
+            // so remove this line of code i.e const recipeContainer = document.querySelector('.recipe')
+                // from controller.js file 
         ```
+    - inside controller.js file , import that search view 
+        - & getting the query of search inside controlSearchResults() async function 
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+        import searchView from './views/searchView.js'
 
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
 
-✔️✔️✔️
-💡💡💡
-✅
-🔥
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
+
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                console.log(id)
+
+                if (!id) return 
+                recipeView.renderSpinner()
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
+
+        const controlSearchResults = async function() {
+            try {
+                const query = searchView.getQuery()
+                if (!query) return
+
+                await model.loadSearchResults(query) 
+                console.log(model.state.search.results)
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        controlSearchResults()
+
+        const init = function() {
+            recipeView.addHandlerRender(controlRecipes)
+        }
+        init()
+        ```
+        - output : we'll not get any results 
+            - because inside the search input , there's nothing yet to found
+            - so we need to run that controlSearchResults async function of controller.js file <br>
+                at the beginning when the application actually loads
+            - so we need to listen for click event on `search` button or submitting that search form <br>
+                then only we want to call that controlSearchResults() async function 💡💡💡 <br>
+                instead of loading in beginning when the scripts loads
+            - so we'll use PUBLISHER SUBSCRIBER pattern 
+                - so we'll listen for the submit event inside searchView.js file
+                - & then pass the controlSearchResults() async function which is a handler function <br>
+                    & that handler function we'll define inside searchView.js file 
+
+- `STEP 6` : using PUBLISHER SUBSCRIBER pattern again for search form to handle submit event
+    - inside searchView.js file 
+        ```js
+        class SearchView {
+            #parentEl = document.querySelector('.search')  
+
+            getQuery() {
+                return this.#parentEl.querySelector('.search__field').value
+            }
+
+            addHandlerSearch(handler) {
+                // this function is going to be the PUBLISHER 
+                    // & controlSearchResults() async function is going to be the SUBSCRIBER ✔️✔️✔️
+
+                this.#parentEl.addEventListener('submit')
+                    // we're listening submit -> event on the form i.e search
+                        // so this will work no matter if the user clicks the submit button
+                        // or if the user hits ENTER key while typing the query 💡💡💡
+
+            }
+        }
+
+        export default new SearchView() 
+        ```
+    - inside searchView.js file , passing the handler function as a argument inside addHandlerSearch() function 
+        ```js
+        class SearchView {
+            #parentEl = document.querySelector('.search')  
+
+            getQuery() {
+                return this.#parentEl.querySelector('.search__field').value
+            }
+
+            addHandlerSearch(handler) {
+                this.#parentEl.addEventListener('submit' , e => {
+                    e.preventDefault()
+
+                    handler()
+                        // here this handler() function should be the controlSearchResults() async function
+                        // so we just need to call this addHandlerSearch() function inside controller.js file 
+                })
+                // here inside addEventListener() method , 
+                    // we can't pass handler -> parameter as callback function directly
+                    // because we know that we need to prevent the default action of submit event of a form 💡💡💡
+                    // otherwise , default action will be page gets refreshed/reload 
+            }
+        }
+
+        export default new SearchView() 
+        ```
+    - inside controller.js file , calling addHandlerSearch() function of searchView.js file
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+        import searchView from './views/searchView.js'
+
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
+
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
+
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                if (!id) return 
+
+                recipeView.renderSpinner()
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
+
+        const controlSearchResults = async function() {
+            try {
+                const query = searchView.getQuery()
+                if (!query) return
+
+                await model.loadSearchResults(query) 
+                console.log(model.state.search.results)
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        controlSearchResults()
+
+        const init = function() {
+            recipeView.addHandlerRender(controlRecipes)
+            searchView.addHandlerSearch(controlSearchResults)
+        }
+        init()
+        ```
+        - output : console.log(model.state.search.results)
+            - inside the search input if we search `pizza` then we'll get (59) results
+            - so {status: "success", results: 59, data: {..}} --> this is coming from the model.js file <br>
+                & that (59) results is coming from controller.js file 
+        - output : if we search for avocado then we'll get the (39) results
+        - now after the search , we need to clear the search input field
+    - inside searchView.js file , clearing the search input field
+        ```js
+        class SearchView {
+            #parentEl = document.querySelector('.search')  
+
+            getQuery() {
+                return this.#parentEl.querySelector('.search__field').value
+            }
+
+            clearInput() {
+                this.#parentEl.querySelector('.search__field').value = ""
+            }
+            // so we nicely encapsulated this function inside SearchView class
+                // & we could do this same thing inside controller.js file
+                // but we want to keep things separated & related to their own stuff
+                    // according to MVC architecture
+            // & this -> this.#parentEl.querySelector('.search__field').value
+                // will make so much easier to add features in the future
+
+            addHandlerSearch(handler) {
+                this.#parentEl.addEventListener('submit' , e => {
+                    e.preventDefault()
+
+                    handler()
+                })
+            }
+        }
+
+        export default new SearchView() 
+        ```
+        - now let's call this clearInput() function of searchView class of searchView.js file <br>
+            if we don't call the function body then that function won't work <br>
+            so it's important to call that function in order to execute it's body
+    - inside controller.js file , calling clearInput() function 
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+        import searchView from './views/searchView.js'
+
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
+
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
+
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                if (!id) return 
+
+                recipeView.renderSpinner()
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
+
+        const controlSearchResults = async function() {
+            try {
+                // 1) Get search query
+                const query = searchView.getQuery()
+                if (!query) return
+                // here can call that clearInput() function 
+                    // but we don't wanna do that , we could simple do inside searchView.js file itself
+
+                // 2) load search results
+                await model.loadSearchResults(query) 
+
+                // 3) Render results
+                console.log(model.state.search.results)
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        controlSearchResults()
+
+        const init = function() {
+            recipeView.addHandlerRender(controlRecipes)
+            searchView.addHandlerSearch(controlSearchResults)
+        }
+        init()
+        ```
+    - inside searchView.js file , calling clearInput() function to clear the input field
+        ```js
+        class SearchView {
+            #parentEl = document.querySelector('.search')  
+
+            getQuery() {
+                const query = this.#parentEl.querySelector('.search__field').value
+                this.#clearInput()
+                return query
+            }
+
+            #clearInput() {
+                // we make this private function because we're not going to use it outside 💡💡💡
+
+                this.#parentEl.querySelector('.search__field').value = ""
+            }
+
+            addHandlerSearch(handler) {
+                this.#parentEl.addEventListener('submit' , e => {
+                    e.preventDefault()
+
+                    handler()
+                })
+            }
+        }
+
+        export default new SearchView() 
+        ```
+        - output : when we search pasta on search & hit Enter key then that input field gets cleared
+            - & then we'll get the (45) results about pasta inside the console tab
+
+- now the thing is left i.e implement the view means second view <br>
+    which is responsible to render all the results inside the sidebar
