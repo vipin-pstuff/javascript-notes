@@ -438,9 +438,20 @@
                     // & we don't want to listen to each of them individually 
                 // so we'll add the event listener to the common parent element 💡💡💡
                 this._parentElement.addEventListener('click' , function(e) {
+                    // first we need to know which button was clicked based on the event i.e event delegation
+                    const btn = e.target.closest('.btn--inline')
+                        // closest() method used to lookup in the DOM tree for that parent 
+                        // querySelector() or querySelectorAll() method used to search down 
+                            // in the DOM tree for that child or children 💡💡💡
 
-                    
+                        // we're selecting the parent element because we might actually click on that span element
+                            // which is inside the those pagination buttons or on that svg 
+                            // instead of clicking on the button itself 
+                        // so we can't simply set the button as e.target but we actually need to search 
+                            // for the closest button element itself
 
+                    console.log(btn)
+                    handler()
                 })
             }
 
@@ -490,15 +501,539 @@
 
         export default new PaginationView() 
         ```
+    - `STEP 4.1` : inside controller.js file , creating a new controller
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+        import searchView from './views/searchView.js'
+        import resultsView from './views/resultsView.js'
+        import paginationView from './views/paginationView.js'
 
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
 
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
 
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                if (!id) return 
 
+                resultsView.renderSpinner()
 
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
 
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
 
-✔️✔️✔️
-💡💡💡
-✅
-🔥
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
 
+        const controlSearchResults = async function() {
+            try {
+                resultsView.renderSpinner()
+
+                // 1) Get search query
+                const query = searchView.getQuery()
+                if (!query) return
+
+                // 2) load search results
+                await model.loadSearchResults(query) 
+
+                // 3) Render results
+                // resultsView.render(model.state.search.results)
+                resultsView.render(model.getSearchResultsPage(2)) 
+                    // & we pass 2 which means starts from page 2 for testing
+
+                // 4) render initial pagination buttons
+                paginationView.render(model.state.search)
+
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        const controlPagination = function() {
+            console.log("Pag controller")
+        }
+
+        const init = function() {
+            recipeView.addHandlerRender(controlRecipes)
+            searchView.addHandlerSearch(controlSearchResults)
+            paginationView.addHandlerClick(controlPagination)
+        }
+        init()
+        ```
+        - output : when we search pizza & then hit ENTER key
+            - then inside the console tab , we'll get a button i.e `<- Page 5` button 
+            - & when we click on that pagination button <br>
+                then we'll get that button element itself & the `Pag controller` as a output
+        - but we selected the button because we need a way of knowing which is the page we need to go now <br>
+            & that button say page 5 but how will JS know that it should now actually display the results of page number 5 . <br>
+            that's why we need to establish a connection b/w the DOM & our code by using the custom data attributes ✅
+        - so let's create a custom data attribute on each of the buttons which will contain the page that we want to go <br>
+            then in our code , we can read that data & make JS or make our application go to that exact page
+    - `STEP 4.2` : inside paginationView.js file , 
+        - creating custom data attribute for each pagination button of those different scenarios
+        ```js
+        import View from './View.js'
+        import icons from 'url:../../img/icons.svg' 
+
+        class PaginationView extends View {
+            _parentElement = document.querySelector('.pagination')
+
+            addHandlerClick(handler) {
+                this._parentElement.addEventListener('click' , function(e) {
+                    const btn = e.target.closest('.btn--inline')
+
+                    const goToPage = btn.dataset.goto
+                    console.log(goToPage)
+
+                    handler()
+                })
+            }
+
+            _generateMarkup() {
+                const curPage = this._data.page
+                const numPages = Math.ceil(this._data.results.length / this._data.resultsPerPage)
+                console.log(numPages)
+
+                // Page 1 & there are other pages
+                if (curPage === 1 && numPages > 1) {
+                    return `
+                        <button data-goto="${curPage + 1}" class="btn--inline pagination__btn--next">
+                            <span>Page ${curPage + 1}</span>
+                            <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                        </button>
+                    ` 
+                }
+
+                // last page
+                if (curPage === numPages && numPages > 1) {
+                    return `
+                        <button data-goto="${curPage - 1}" class="btn--inline pagination__btn--prev">
+                            <svg class="search__icon"><use href="${icons}#icon-arrow-left"></use></svg>
+                            <span>Page ${curPage - 1}</span>
+                        </button>
+                    `
+                }
+
+                // other page
+                if (curPage < numPages) {
+                    return `
+                        <button data-goto="${curPage - 1}" class="btn--inline pagination__btn--prev">
+                            <svg class="search__icon"><use href="${icons}#icon-arrow-left"></use></svg>
+                            <span>Page ${curPage - 1}</span>
+                        </button>
+                        <button data-goto="${curPage + 1}" class="btn--inline pagination__btn--next">
+                            <span>Page ${curPage + 1}</span>
+                            <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                        </button>
+                    ` 
+                }
+
+                // Page 1 & there are NO other pages
+                return "" 
+            }
+        }
+
+        export default new PaginationView() 
+        ```
+        - `STEP 4.2.1` : inside controller.js file , pass 4 to start from page 4 
+            - inside this `resultsView.model(model.getSearchResultsPage(4))` , just to get two buttons 
+        - output : when we search pizza & then we'll get two button i.e `Page 3` & `Page 5` 
+            - & if we click on `Page 5` then we'll get this output 
+                ![output 1](../notes-pics/18-module/15-lecture/lecture-15-0.jpg)
+            - if we again click on output means on pagination section then we'll get `null`
+    - `STEP 4.3` : inside paginationView.js file , using guard clause for if there's no button 
+        - & convert value of data attribute into integer
+        ```js
+        import View from './View.js'
+        import icons from 'url:../../img/icons.svg' 
+
+        class PaginationView extends View {
+            _parentElement = document.querySelector('.pagination')
+
+            addHandlerClick(handler) {
+                this._parentElement.addEventListener('click' , function(e) {
+                    const btn = e.target.closest('.btn--inline')
+                    if (!btn) return
+
+                    const goToPage = +btn.dataset.goto
+                    console.log(goToPage)
+
+                    handler()
+                })
+            }
+
+            _generateMarkup() {
+                const curPage = this._data.page
+                const numPages = Math.ceil(this._data.results.length / this._data.resultsPerPage)
+                console.log(numPages)
+
+                // Page 1 & there are other pages
+                if (curPage === 1 && numPages > 1) {
+                    return `
+                        <button data-goto="${curPage + 1}" class="btn--inline pagination__btn--next">
+                            <span>Page ${curPage + 1}</span>
+                            <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                        </button>
+                    ` 
+                }
+
+                // last page
+                if (curPage === numPages && numPages > 1) {
+                    return `
+                        <button data-goto="${curPage - 1}" class="btn--inline pagination__btn--prev">
+                            <svg class="search__icon"><use href="${icons}#icon-arrow-left"></use></svg>
+                            <span>Page ${curPage - 1}</span>
+                        </button>
+                    `
+                }
+
+                // other page
+                if (curPage < numPages) {
+                    return `
+                        <button data-goto="${curPage - 1}" class="btn--inline pagination__btn--prev">
+                            <svg class="search__icon"><use href="${icons}#icon-arrow-left"></use></svg>
+                            <span>Page ${curPage - 1}</span>
+                        </button>
+                        <button data-goto="${curPage + 1}" class="btn--inline pagination__btn--next">
+                            <span>Page ${curPage + 1}</span>
+                            <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                        </button>
+                    ` 
+                }
+
+                // Page 1 & there are NO other pages
+                return "" 
+            }
+        }
+
+        export default new PaginationView() 
+        ```
+        - output : search pasta & hit ENTER & then we'll get `Page 3` & `Page 5`
+            - & when we click on `Page 3` button then we'll get `3` & same with `Page 5`
+        - so we can pass that number to the controller & then inside the controller , use that number <br>
+            to render the results on that page that we want by using getSearchResultsPage() method ✔️✔️✔️
+
+- `STEP 5` : inside paginationView.js file , pass that goToPage inside handler() function
+    ```js
+    import View from './View.js'
+    import icons from 'url:../../img/icons.svg' 
+
+    class PaginationView extends View {
+        _parentElement = document.querySelector('.pagination')
+
+        addHandlerClick(handler) {
+            this._parentElement.addEventListener('click' , function(e) {
+                const btn = e.target.closest('.btn--inline')
+                if (!btn) return
+
+                const goToPage = +btn.dataset.goto
+
+                handler(goToPage)
+            })
+        }
+
+        _generateMarkup() {
+            const curPage = this._data.page
+            const numPages = Math.ceil(this._data.results.length / this._data.resultsPerPage)
+            console.log(numPages)
+
+            // Page 1 & there are other pages
+            if (curPage === 1 && numPages > 1) {
+                return `
+                    <button data-goto="${curPage + 1}" class="btn--inline pagination__btn--next">
+                        <span>Page ${curPage + 1}</span>
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                    </button>
+                ` 
+            }
+
+            // last page
+            if (curPage === numPages && numPages > 1) {
+                return `
+                    <button data-goto="${curPage - 1}" class="btn--inline pagination__btn--prev">
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-left"></use></svg>
+                        <span>Page ${curPage - 1}</span>
+                    </button>
+                `
+            }
+
+            // other page
+            if (curPage < numPages) {
+                return `
+                    <button data-goto="${curPage - 1}" class="btn--inline pagination__btn--prev">
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-left"></use></svg>
+                        <span>Page ${curPage - 1}</span>
+                    </button>
+                    <button data-goto="${curPage + 1}" class="btn--inline pagination__btn--next">
+                        <span>Page ${curPage + 1}</span>
+                        <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                    </button>
+                ` 
+            }
+
+            // Page 1 & there are NO other pages
+            return "" 
+        }
+    }
+
+    export default new PaginationView() 
+    ```
+    - `STEP 5.1` : inside controller.js file , let's work on controlPagination() function
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+        import searchView from './views/searchView.js'
+        import resultsView from './views/resultsView.js'
+        import paginationView from './views/paginationView.js'
+
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
+
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
+
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                if (!id) return 
+
+                resultsView.renderSpinner()
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
+
+        const controlSearchResults = async function() {
+            try {
+                resultsView.renderSpinner()
+
+                // 1) Get search query
+                const query = searchView.getQuery()
+                if (!query) return
+
+                // 2) load search results
+                await model.loadSearchResults(query) 
+
+                // 3) Render results
+                // resultsView.render(model.state.search.results)
+                resultsView.render(model.getSearchResultsPage(2)) 
+                    // & we pass 2 which means starts from page 2 for testing
+
+                // 4) render initial pagination buttons
+                paginationView.render(model.state.search) // here we're rendering the pagination 
+
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        const controlPagination = function(goToPage) { // here we're controlling pagination
+            console.log(goToPage)  
+        }
+
+        const init = function() {
+            recipeView.addHandlerRender(controlRecipes)
+            searchView.addHandlerSearch(controlSearchResults)
+            paginationView.addHandlerClick(controlPagination)
+        }
+        init()
+        ```
+        - output : search pizza & click on `Page 5` then inside the console , we'll get `5` from controller.js:55
+        - so when we click on `Page 5` then we should get number of items of `Page 5` <br>
+            & then also new buttons should render inside pagination section i.e `Page 4` & `Page 6`  
+    - `STEP 5.2` : inside controller.js file , creating new results
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+        import searchView from './views/searchView.js'
+        import resultsView from './views/resultsView.js'
+        import paginationView from './views/paginationView.js'
+
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
+
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
+
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                if (!id) return 
+
+                resultsView.renderSpinner()
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
+
+        const controlSearchResults = async function() {
+            try {
+                resultsView.renderSpinner()
+
+                // 1) Get search query
+                const query = searchView.getQuery()
+                if (!query) return
+
+                // 2) load search results
+                await model.loadSearchResults(query) 
+
+                // 3) Render results
+                resultsView.render(model.getSearchResultsPage(3)) // for testing , we pass 3 
+
+                // 4) render initial pagination buttons
+                paginationView.render(model.state.search) 
+
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        const controlPagination = function(goToPage) { 
+            // 1) Render NEW results
+            resultsView.render(model.getSearchResultsPage(goToPage)) 
+                // here render() method will work means it'll overwrite the markup which was previously there
+                // because inside View.js file , 
+                    // we have this._clear()
+                    // so before any new HTML inserted into the page , the parentElement will get cleared 
+                // so render() method will overwrite everything which was there & puts the new content in the same place  
+
+            // 2) render NEW  pagination buttons
+            paginationView.render(model.state.search) 
+        }
+
+        const init = function() {
+            recipeView.addHandlerRender(controlRecipes)
+            searchView.addHandlerSearch(controlSearchResults)
+            paginationView.addHandlerClick(controlPagination)
+        }
+        init()
+        ```
+        - output : search pizza & hit ENTER 
+            - then click on `Page 4` then we'll get items of `Page 4` & we change the forward button as `Page 5`
+            - & if we click on `Page 5` then we'll get items of `Page 5` & both back & forward button gets changed
+    - `STEP 5.3` : inside controller.js file , pass nothing inside getSearchResultsPage() method
+        - like this
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+        import searchView from './views/searchView.js'
+        import resultsView from './views/resultsView.js'
+        import paginationView from './views/paginationView.js'
+
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
+
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
+
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+                if (!id) return 
+
+                resultsView.renderSpinner()
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
+
+        const controlSearchResults = async function() {
+            try {
+                resultsView.renderSpinner()
+
+                // 1) Get search query
+                const query = searchView.getQuery()
+                if (!query) return
+
+                // 2) load search results
+                await model.loadSearchResults(query) 
+
+                // 3) Render results
+                resultsView.render(model.getSearchResultsPage()) 
+                    // here we didn't pass anything which means we're on Page 1 
+
+                // 4) render initial pagination buttons
+                paginationView.render(model.state.search) 
+
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        const controlPagination = function(goToPage) { 
+            // 1) Render NEW results
+            resultsView.render(model.getSearchResultsPage(goToPage)) 
+
+            // 2) render NEW  pagination buttons
+            paginationView.render(model.state.search) 
+        }
+
+        const init = function() {
+            recipeView.addHandlerRender(controlRecipes)
+            searchView.addHandlerSearch(controlSearchResults)
+            paginationView.addHandlerClick(controlPagination)
+        }
+        init()
+        ```
+        - output : inside config.js file , if we change the RES_PER_PAGE as 50
+            - & search pasta then inside the console tab , we'll get (45) result
+            - & we'll not get any pagination button
+            - so now change the RES_PER_PAGE as 10 only as meaningful value
+
+- so inside flowchart of forkify flowchart part 1 , we did everything <br>
+    so in this lecture , we did user clicks pagination & render pagination button <br>
+    & render the corresponding search results
+
+## conclusion 
+
+- analyze the code which is inside controlPagination() function & that initializing the pagination <br>
+    inside controller.js file & understand the flow of code especially goToPage
