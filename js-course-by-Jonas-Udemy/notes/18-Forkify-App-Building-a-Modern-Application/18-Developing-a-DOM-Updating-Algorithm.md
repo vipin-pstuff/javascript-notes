@@ -851,7 +851,7 @@
             }
         }
 
-        // put code from STEP 5.2 after above code 
+        // put code from STEP 5.1 after above code 
         ```
         - output : we'll get this output 
             ![output](../notes-pics/18-module/18-lecture/lecture-18-5.jpg)
