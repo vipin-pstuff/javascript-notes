@@ -300,7 +300,8 @@
                     const curEl = curElements[i]
                     console.log(curEl , newEl.isEqualNode(curEl))
                         // about isEqualNode() method ✅ :
-                            // used to check whether two Nodes are equal or not 
+                            // used to check whether two Nodes are equal or not 💡💡💡
+                        
                 })
             }
 
@@ -348,7 +349,479 @@
             }
         }
         ```
+        - `difference b/w elements vs nodes in JS` : 
+            - https://stackoverflow.com/questions/9979172/difference-between-node-object-and-element-object 💡💡💡
+            - check jonas lecture module related to DOM & events
+        - output : when we click on `+` button of servings
+            - then we'll get nodes with true or false like this
+            ![comparing new nodes with actual nodes of the page](../notes-pics/18-module/18-lecture/lecture-18-1.jpg)
+            - some of them are false because inside of them content is changed
+    - `STEP 3.2` : inside View.js file , updating the stuff of current element of the actual page
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+
+        export default class View {
+            _data ; 
+
+            render(data) {
+                if (!data || (Array.isArray(data) && data.length === 0)) return this.renderError()
+                this._data = data
+                const markup = this._generateMarkup()
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            update(data) {
+                if (!data || (Array.isArray(data) && data.length === 0)) return this.renderError()
+                this._data = data
+                const newMarkup = this._generateMarkup()
+
+                const newDOM = document.createRange().createContextualFragment(newMarkup)
+                const newElements = Array.from(newDOM.querySelectorAll("*")) 
+                const curElements = Array.from(this._parentElement.querySelectorAll("*"))
+
+                newElements.forEach((newEl, i) => {
+                    const curEl = curElements[i]
+                    console.log(curEl , newEl.isEqualNode(curEl))
+
+                    if (!newEl.isEqualNode(curEl)) {
+                        curEl.innerText = newEl.innerText
+                    }
+                })
+            }
+
+            _clear() {
+                this._parentElement.innerHTML = '' 
+            }
+
+            renderSpinner() { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}_icon-loader"></use></svg>
+                    </div>
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            renderError(message = this._errorMessage) {
+                const markup = `
+                    <div class="error">
+                        <div>
+                            <svg><use href="${icons}_icon-alert-triangle"></use></svg>
+                        </div>
+                        <p>${message}</p>
+                    </div> 
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            renderMessage(message = this._message) {
+                const markup = `
+                    <div class="message">
+                        <div>
+                            <svg><use href="${icons}_icon-smile"></use></svg>
+                        </div>
+                        <p>${message}</p>
+                    </div> 
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+        }
+        ```
+        - output : when we click on `+` plus button of servings then all the things get removed 
+            - & we'll get this output like this
+            ![output](../notes-pics/18-module/18-lecture/lecture-18-2.jpg)
+            - so we replace all the things from `recipe__details` div , because inside this div , <br>
+                some thing has changed that's why everything which is inside this div <br>
+                has been changed when we did `curEl.innerText = newEl.innerText`
+        - so we need find the thing which only replace/change the text <br>
+            so we can use property which is available on all nodes i.e `nodeValue` 💡💡💡 <br>
+            so if it's a element then node value will be null <br>
+            but if it's a text then we'll get the content of the text node 💡💡💡
+    - `STEP 3.3` : inside View.js file , using nodeValue property to check further condition ✅
+        - `firstChild` property : https://www.w3schools.com/jsref/prop_node_firstchild.asp
+            - it deals with html elements like ul , select element , ol , etc
+            - Whitespace between elements is considered text nodes. so inside ul element <br>
+                If there is a whitespace before the first "li" element, the result will be "undefined". 💡💡💡
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+
+        export default class View {
+            _data ; 
+
+            render(data) {
+                if (!data || (Array.isArray(data) && data.length === 0)) return this.renderError()
+                this._data = data
+                const markup = this._generateMarkup()
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            update(data) {
+                if (!data || (Array.isArray(data) && data.length === 0)) return this.renderError()
+                this._data = data
+                const newMarkup = this._generateMarkup()
+
+                const newDOM = document.createRange().createContextualFragment(newMarkup)
+                const newElements = Array.from(newDOM.querySelectorAll("*")) 
+                const curElements = Array.from(this._parentElement.querySelectorAll("*"))
+
+                newElements.forEach((newEl, i) => {
+                    const curEl = curElements[i]
+                    console.log(curEl , newEl.isEqualNode(curEl))
+
+                    if (!newEl.isEqualNode(curEl) && newEl.firstChild.nodeValue.trim() !== "") {
+                        // there we used trim() method to remove the white space
+                        console.log(newEl.firstChild.nodeValue.trim())
+                        curEl.innerText = newEl.innerText
+                    }
+                })
+            }
+
+            _clear() {
+                this._parentElement.innerHTML = '' 
+            }
+
+            renderSpinner() { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}_icon-loader"></use></svg>
+                    </div>
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            renderError(message = this._errorMessage) {
+                const markup = `
+                    <div class="error">
+                        <div>
+                            <svg><use href="${icons}_icon-alert-triangle"></use></svg>
+                        </div>
+                        <p>${message}</p>
+                    </div> 
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            renderMessage(message = this._message) {
+                const markup = `
+                    <div class="message">
+                        <div>
+                            <svg><use href="${icons}_icon-smile"></use></svg>
+                        </div>
+                        <p>${message}</p>
+                    </div> 
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+        }
+        ```
+        - output : `newEl.firstChild.nodeValue.trim()`
+            - when we click on `+` plus button of servings then we'll get this output
+            ![output](../notes-pics/18-module/18-lecture/lecture-18-3.jpg)
+            - so got output of `newEl.firstChild.nodeValue.trim()` i.e 5 <br>
+                so in other elements which didn't contain text directly then there nodeValue will be null 💡💡💡 <br>
+                & due to that , that condition gets false
+        - now let's add optional chaining like this `newEl.firstChild?.nodeValue.trim()` <br>
+            because might be firstChild doesn't exist always 💡💡💡
+    - `STEP 3.4` : inside View.js file , using optional chaining on firstChild
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+
+        export default class View {
+            // put code from STEP 3.3 before below code 
+
+            update(data) {
+                if (!data || (Array.isArray(data) && data.length === 0)) return this.renderError()
+                this._data = data
+                const newMarkup = this._generateMarkup()
+
+                const newDOM = document.createRange().createContextualFragment(newMarkup)
+                const newElements = Array.from(newDOM.querySelectorAll("*")) 
+                const curElements = Array.from(this._parentElement.querySelectorAll("*"))
+
+                newElements.forEach((newEl, i) => {
+                    const curEl = curElements[i]
+                    console.log(curEl , newEl.isEqualNode(curEl))
+
+                    if (!newEl.isEqualNode(curEl) && newEl.firstChild?.nodeValue.trim() !== "") {
+                        // here using optional chaining to make sure 100% that the code is going to work 💡💡💡
+
+                        curEl.innerText = newEl.innerText
+                    }
+                })
+            }
+
+            // put code from STEP 3.3 after above code
+        }
+        ```
+        - output : when we click on `-` minus button of servings then servings become from 4 into 3
+            - & value of recipe ingredients will updated , but we'll not see any flickering on any element 
+            - because there's nothing replaced except that servings text & value of recipe ingredients 💡💡💡 <br>
+                & everything will remain same
+            - & currently we can increase or decrease servings b/w 3 to 5 <br>
+                because data attribute of `-` button of servings has a value of 3 & `+` plus button has 5 <br>
+                so we also need to update data attribute value of these buttons also instead of just updating in the UI 
+
+- `STEP 4` : inside View.js file , updating the attribute
+    ```js
+    import icons from 'url:../../img/icons.svg' 
+
+    export default class View {
+        _data ; 
+
+        render(data) {
+            if (!data || (Array.isArray(data) && data.length === 0)) return this.renderError()
+            this._data = data
+            const markup = this._generateMarkup()
+            this._clear()
+            this._parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
+
+        update(data) {
+            if (!data || (Array.isArray(data) && data.length === 0)) return this.renderError()
+            this._data = data
+            const newMarkup = this._generateMarkup()
+
+            const newDOM = document.createRange().createContextualFragment(newMarkup)
+            const newElements = Array.from(newDOM.querySelectorAll("*")) 
+            const curElements = Array.from(this._parentElement.querySelectorAll("*"))
+
+            newElements.forEach((newEl, i) => {
+                const curEl = curElements[i]
+                console.log(curEl , newEl.isEqualNode(curEl))
+
+                // Updates changed TEXT
+                if (!newEl.isEqualNode(curEl) && newEl.firstChild?.nodeValue.trim() !== "") {
+                    curEl.innerText = newEl.innerText
+                }
+                // here're we're updating the changed text
+
+                // Updates changed ATTRIBUTES
+                if (!newEl.isEqualNode(curEl)) {
+                    // console.log(newEl.attributes) // output : we'll get the output in object form
+                        // this will print all the attributes of that element which has been changed
+
+                    console.log(Array.from(newEl.attributes))
+                    Array.from(newEl.attributes).forEach(attr => {
+                        curEl.setAttribute(att.name, attr.value)
+                    })
+                }
+            })
+        }
+
+        _clear() {
+            this._parentElement.innerHTML = '' 
+        }
+
+        renderSpinner() { 
+            const markup = `
+                <div class="spinner">
+                    <svg><use href="${icons}_icon-loader"></use></svg>
+                </div>
+            `
+
+            this._clear()
+            this._parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
+
+        renderError(message = this._errorMessage) {
+            const markup = `
+                <div class="error">
+                    <div>
+                        <svg><use href="${icons}_icon-alert-triangle"></use></svg>
+                    </div>
+                    <p>${message}</p>
+                </div> 
+            `
+
+            this._clear()
+            this._parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
+
+        renderMessage(message = this._message) {
+            const markup = `
+                <div class="message">
+                    <div>
+                        <svg><use href="${icons}_icon-smile"></use></svg>
+                    </div>
+                    <p>${message}</p>
+                </div> 
+            `
+
+            this._clear()
+            this._parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
+    }
+    ```
+    - output : console.log(Array.from(newEl.attributes))
+        - after clicking on `+` plus button of servings then we'll get this output of that button
+        ![output](../notes-pics/18-module/18-lecture/lecture-18-4.jpg)
+        - so inside this array , inside `class` , we have name property <br>
+            so we can take that `name` property & set it to the `value` property of `data-update-to` 
+        - so we want to replace all the attributes in the current element by the attributes which is coming from newEl
+        - so when we click on `+` or `-` button then servings value also change & value of recipe ingredients updated <br>
+            & also value of data attribute of those servings will also gets updated 
+    - & only servings number & value of recipe ingredients changing & nothing is changing <br>
+        so we 100% updated the DOM only where text & attributes is changing 💡💡💡
+    - inside this section of code 
+        ```
+        // Updates changed TEXT
+        if (!newEl.isEqualNode(curEl) && newEl.firstChild?.nodeValue.trim() !== "") {
+            curEl.innerText = newEl.innerText
+        }
+        // here're we're updating the changed text
+
+        // Updates changed ATTRIBUTES
+        if (!newEl.isEqualNode(curEl)) {
+            // console.log(newEl.attributes) // output : we'll get the output in object form
+                // this will print all the attributes of that element which has been changed
+
+            console.log(Array.from(newEl.attributes))
+            Array.from(newEl.attributes).forEach(attr => {
+                curEl.setAttribute(att.name, attr.value)
+            })
+        }
+        ```
+        - this is no the robust solution & not the best algorithm to use in real world apps <br>
+            unless we have kind-of small application like this one
+        - but for huge big application is not good one in terms of performance
+
+- inside forkify flowchart of part2 , we did `user updates servings` <br>
+    now we'll use that algorithm to `mark selected result` b/w render search results & user selects recipe <br>
+    means when we select the recipe which is on left side then it should me highlighted
+- `STEP 5` : inside resultsView.js file , 
+    - marking that selected recipe by putting this class `preview__link--active` on the anchor element <br>
+        based on if result id as same as hash id on the URL
+    ```js
+    import View from './View.js'
+    import icons from 'url:../../img/icons.svg' 
+
+    class ResultsView extends View {
+        _parentElement = document.querySelector('.results')
+        _errorMessage = 'No recipes found for your query! Please try again :-D'
+        _message = ""
+
+        _generateMarkup() {
+            console.log(this._data)
+            return this._data.map(this._generateMarkupPreview).join("")
+        }
+
+        _generateMarkupPreview(result) {
+            const id = window.location.hash.slice(1) // getting first element
+
+            return ` 
+                <li class="preview">
+                    <a class="preview__link ${result.id === id ? 'preview__link--active' : ''}" href="#${result.id}">
+                        <figure class="preview__fig">
+                            <img src="${result.image}" alt="${result.title}" />
+                        </figure>
+                        <div class="preview__data">
+                            <h4 class="preview__title">${result.title}</h4>
+                            <p class="preview__publisher">${result.publisher}</p>
+                        </div>
+                    </a>
+                </li>
+            `
+        }
+    }
+
+    export default new ResultsView() 
+    ```
+    - `STEP 5.1` : inside controller.js file , updating the results view after recipeView.renderSpinner()
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+        import searchView from './views/searchView.js'
+        import resultsView from './views/resultsView.js'
+        import paginationView from './views/paginationView.js'
+
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
+
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
+
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
+
+                if (!id) return 
+                resultsView.renderSpinner()
+
+                // 0) update results view to mark selected search result
+                resultsView.render(model.getSearchResultsPage()) // for checking purpose we're using render() method 
+                    // instead of update() method of resultsView
+
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
+
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
+
+        const controlSearchResults = async function() {
+            try {
+                resultsView.renderSpinner()
+
+                // 1) Get search query
+                const query = searchView.getQuery()
+                if (!query) return
+
+                // 2) load search results
+                await model.loadSearchResults(query) 
+
+                // 3) Render results
+                resultsView.render(model.getSearchResultsPage()) 
+                    // here we didn't pass anything which means we're on Page 1 
+
+                // 4) render initial pagination buttons
+                paginationView.render(model.state.search) 
+
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        const controlPagination = function(goToPage) { 
+            // 1) Render NEW results
+            resultsView.render(model.getSearchResultsPage(goToPage)) 
+
+            // 2) render NEW  pagination buttons
+            paginationView.render(model.state.search) 
+        }
+
+        const init = function() {
+            recipeView.addHandlerRender(controlRecipes)
+            searchView.addHandlerSearch(controlSearchResults)
+            paginationView.addHandlerClick(controlPagination)
+        }
+        init()
+        ```
         - output : 
+
+
 
 
 ✔️✔️✔️
