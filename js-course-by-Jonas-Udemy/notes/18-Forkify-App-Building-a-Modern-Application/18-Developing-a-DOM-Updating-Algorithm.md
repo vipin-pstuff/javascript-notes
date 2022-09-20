@@ -768,7 +768,7 @@
 
                 // 0) update results view to mark selected search result
                 resultsView.render(model.getSearchResultsPage()) // for checking purpose we're using render() method 
-                    // instead of update() method of resultsView
+                    // & then we'll see through update() method of resultsView
 
                 // 1 - Loading recipe
                 await model.loadRecipe(id) 
@@ -819,13 +819,141 @@
         }
         init()
         ```
-        - output : 
+        - output : on the address bar , remove that hash id & then refresh the page
+            - now search pizza & hit ENTER , now click on any item then that item gets selected 
+            - & this happen because when we click on that item then URL change <br>
+                then that recipe is loaded on right side & then all the search results of left side , re-rendered again <br>
+                & now that hash id is same as selected recipe id that's why it got active class
+            - when we click on another recipe then all the images get flicker which means everything is re-rendered <br>
+                that's why we need use update() method of recipeView instead of render() 💡💡💡
+    - `STEP 5.2` : inside controller.js file , using update() method of recipeView
+        ```js
+        // put code from STEP 5.1 before below code
 
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
 
+                if (!id) return 
+                resultsView.renderSpinner()
 
+                // 0) update results view to mark selected search result
+                resultsView.render(model.getSearchResultsPage()) 
 
-✔️✔️✔️
-💡💡💡
-✅
-🔥
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
 
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
+
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
+
+        // put code from STEP 5.2 after above code 
+        ```
+        - output : we'll get this output 
+            ![output](../notes-pics/18-module/18-lecture/lecture-18-5.jpg)
+            - when we search pizza then we can see that recipe also selected automatically
+                ![output](../notes-pics/18-module/18-lecture/lecture-18-6.jpg)
+            - now when we select any recipe of left side section then no other recipe gets flicker even selected one too <br>
+                except on right side section
+            - because only those elements which are changed , they're just updated
+
+        - now when we load the page then on left side , no recipe will come & we'll get 'No recipes found...' <br>
+            message on left side because our application is immediately trying to update the view . 
+        - so inside controller.js file , inside controlRecipes() async function , when we page loads <br>
+            & there's an id then that recipe will get loaded of that id even though there's no search before <br>
+            & then we're trying to update via `resultsView.update(model.getSearchResultsPage())` but there's no search results <br>
+            then this -> `resultsView.update(model.getSearchResultsPage())` will return an empty array
+        - so go inside View.js file , remove this condition `if (!data || Array.isArray(data) && data.length === 0)` from <br>
+            update() method because when we have an empty array then this part `Array.isArray(data) && data.length === 0` <br>
+            will gets true & that error gets rendered which doesn't make sense
+    - `STEP 5.3` : inside View.js file , 
+        - remove this condition -> `if (!data || Array.isArray(data) && data.length === 0)` from update() method
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+
+        export default class View {
+            _data ; 
+
+            render(data) {
+                this._data = data
+                const markup = this._generateMarkup()
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            update(data) {
+                if (!data || (Array.isArray(data) && data.length === 0)) return this.renderError()
+                this._data = data
+                const newMarkup = this._generateMarkup()
+
+                const newDOM = document.createRange().createContextualFragment(newMarkup)
+                const newElements = Array.from(newDOM.querySelectorAll("*")) 
+                const curElements = Array.from(this._parentElement.querySelectorAll("*"))
+
+                newElements.forEach((newEl, i) => {
+                    const curEl = curElements[i]
+                    console.log(curEl , newEl.isEqualNode(curEl))
+
+                    // Updates changed TEXT
+                    if (!newEl.isEqualNode(curEl) && newEl.firstChild?.nodeValue.trim() !== "") {
+                        curEl.innerText = newEl.innerText
+                    }
+
+                    // Updates changed ATTRIBUTES
+                    if (!newEl.isEqualNode(curEl)) {
+                        Array.from(newEl.attributes).forEach(attr => {
+                            curEl.setAttribute(att.name, attr.value)
+                        })
+                    }
+                })
+            }
+
+            _clear() {
+                this._parentElement.innerHTML = '' 
+            }
+
+            renderSpinner() { 
+                const markup = `
+                    <div class="spinner">
+                        <svg><use href="${icons}_icon-loader"></use></svg>
+                    </div>
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            renderError(message = this._errorMessage) {
+                const markup = `
+                    <div class="error">
+                        <div>
+                            <svg><use href="${icons}_icon-alert-triangle"></use></svg>
+                        </div>
+                        <p>${message}</p>
+                    </div> 
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            renderMessage(message = this._message) {
+                const markup = `
+                    <div class="message">
+                        <div>
+                            <svg><use href="${icons}_icon-smile"></use></svg>
+                        </div>
+                        <p>${message}</p>
+                    </div> 
+                `
+
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+        }
+        ```
+        - output : when we refresh the page then on left side that message/error won't come on UI
