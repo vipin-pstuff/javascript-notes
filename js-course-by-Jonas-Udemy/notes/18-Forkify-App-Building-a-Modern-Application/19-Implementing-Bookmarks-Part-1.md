@@ -871,6 +871,7 @@
             // add bookmark
             state.bookmarks.push(recipe)
 
+            // Mark Current recipe as bookmarked
             if (recipe.id === state.recipe.id) {
                 state.recipe.bookmarked = true
             }
@@ -886,19 +887,317 @@
 
 - `STEP 5` : inside model.js file , exporting another new function to un-bookmark that recipe
     ```js
-    
+    import { async } from 'regenerator-runtime' ;
+    import { API_URL , RES_PER_PAGE } from '.config.js'
+    import { getJSON } from './helpers.js'
+            
+    export const state = {
+        recipe: {} , 
+        search: {
+            query: "" ,
+            result: [] , 
+            page: 1 , 
+            resultsPerPage: RES_PER_PAGE, 
+        } ,
+        bookmarks: [] 
+    }
+
+    export const loadRecipe = async function(id) {  
+        try {
+            const data = await getJSON(`${API_URL}${id}`)
+
+            const { recipe } = data.data 
+            state.recipe = { 
+                id:  recipe.id , 
+                title: recipe.title, 
+                publisher: recipe.publisher,
+                sourceUrl: recipe.source_url ,
+                image: recipe.image_url, 
+                servings: recipe.servings, 
+                cookingTime: recipe.cooking_time ,
+                ingredients: recipe.ingredients
+            }
+
+            if (state.bookmarks.some(bookmark => bookmark.id === id)) {
+                state.recipe.bookmarked = true
+            } else {
+                state.recipe.bookmarked = false
+            }
+            
+            console.log(state.recipe) 
+        } catch(err) {
+            console.log(`${err} 💥💥💥`)
+            throw err 
+        }
+    }
+
+    export const loadSearchResults = async function() {
+        try {
+            state.search.query = query                
+            const data = await getJSON(`${API_URL}?search=${query}`)
+
+            state.search.results = data.data.recipes.map(rec => {
+                return {
+                    id:  rec.id , 
+                    title: rec.title, 
+                    publisher: rec.publisher,
+                    image: rec.image_url, 
+                }
+            })
+
+            state.search.page = 1 
+        } catch(err) {
+            console.log(`${err} 💥💥💥`)
+            throw err 
+        }
+    }
+
+    export const getSearchResultsPage = function(page = state.search.page) { // passing default argument
+        state.search.page = page
+
+        const start = (page - 1) * state.search.resultsPerPage 
+        const end = page * state.search.resultsPerPage
+        return state.search.results.slice(start, end)
+    }   
+
+    export const addBookmark = function(recipe) {
+        // add bookmark
+        state.bookmarks.push(recipe)
+
+        // Mark Current recipe as bookmarked
+        if (recipe.id === state.recipe.id) {
+            state.recipe.bookmarked = true
+        }
+    }
+
+    export const deleteBookmark = function(id) {
+        // this is the common pattern in programming 
+            // that when we add something , we get the entire data i.e we did in addBookmark
+        // & when we want to delete something , then we only get to the ID i.e we did in deleteBookmark 💡💡💡
+
+        // Delete bookmark
+        const index = state.bookmarks.findIndex(el => el.id === id)
+        state.bookmarks.splice(index, 1)
+
+        // Mark Current recipe as NOT bookmarked
+        if (id === state.recipe.id) {
+            state.recipe.bookmarked = false
+        }
+    }
     ```
+    - `STEP 5.1` : inside controller.js file , putting condition when we want to `bookmarked` property has false
+        ```js
+        import * as model from './model.js' 
+        import recipeView from './views/recipeView.js'
+        import searchView from './views/searchView.js'
+        import resultsView from './views/resultsView.js'
+        import paginationView from './views/paginationView.js'
 
+        import 'core-js/stable' 
+        import 'regenerator-runtime/runtime' 
 
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
 
+        const controlRecipe = async function() {
+            try {
+                const id = window.location.hash.slice(1)
 
+                if (!id) return 
+                resultsView.renderSpinner()
 
+                // 0) update results view to mark selected search result
+                resultsView.render(model.getSearchResultsPage()) 
 
+                // 1 - Loading recipe
+                await model.loadRecipe(id) 
 
+                // 2 - Rendering recipe
+                recipeView.render(model.state.recipe)
 
+            } catch(err) {
+                recipeView.renderError() 
+            }
+        }
 
-✔️✔️✔️
-💡💡💡
-✅
-🔥
+        const controlSearchResults = async function() {
+            try {
+                resultsView.renderSpinner()
 
+                // 1) Get search query
+                const query = searchView.getQuery()
+                if (!query) return
+
+                // 2) load search results
+                await model.loadSearchResults(query) 
+
+                // 3) Render results
+                resultsView.render(model.getSearchResultsPage()) 
+
+                // 4) render initial pagination buttons
+                paginationView.render(model.state.search) 
+
+            } catch(err) {
+                console.log(err)
+            }
+        }
+
+        const controlPagination = function(goToPage) { 
+            // 1) Render NEW results
+            resultsView.render(model.getSearchResultsPage(goToPage)) 
+
+            // 2) render NEW  pagination buttons
+            paginationView.render(model.state.search) 
+        }
+
+        const controlAddBookmark = function() {
+            if (!model.state.recipe.bookmarked) {
+                model.addBookmark(model.state.recipe)
+            }
+
+            if (model.state.recipe.bookmarked) {
+                model.deleteBookmark(model.state.recipe.id)
+            }
+
+            console.log(model.state.recipe)
+            recipeView.update(model.state.recipe)
+        }
+        // we can read the bookmarked -> property at the beginning 
+            // because we add that to all the recipes inside model.js file , which are loaded 
+            // means we're able to access bookmarked -> property
+                // because we define the bookmarked -> property inside loadRecipe() async function inside model.js file
+
+        const init = function() {
+            recipeView.addHandlerRender(controlRecipes)
+            recipeView.addHandlerUpdateServings(controlServings)
+            recipeView.addHandlerAddBookmark(controlAddBookmark)
+            searchView.addHandlerSearch(controlSearchResults)
+            paginationView.addHandlerClick(controlPagination)
+        }
+        init()
+        ```
+        - output : when we search for pizza
+            - & clicked on the item to bookmark then it'll not get bookmarked
+            - so the problem is that we're using if if statements inside controlAddBookmark() function of controller.js file 
+                ```
+                const controlAddBookmark = function() {
+                    if (!model.state.recipe.bookmarked) {
+                        model.addBookmark(model.state.recipe)
+                    }
+
+                    if (model.state.recipe.bookmarked) {
+                        model.deleteBookmark(model.state.recipe.id)
+                    }
+
+                    console.log(model.state.recipe)
+                    recipeView.update(model.state.recipe)
+                }
+                ```
+                - we know already that if the first `if statement` gets true or false <br>
+                    then still the next `if statement` will also be checked 
+                - so in first `if statement` , we bookmarked & then in next `if statement` condition says <br>
+                    we already bookmarked so that bookmarked recipe will be deleted by deleteBookmark() function
+                - so we need to use `if else statement` 💡💡💡
+
+- `STEP 6` : inside controller.js file , using `if else statement` inside controlAddBookmark() function
+    ```js
+    import * as model from './model.js' 
+    import recipeView from './views/recipeView.js'
+    import searchView from './views/searchView.js'
+    import resultsView from './views/resultsView.js'
+    import paginationView from './views/paginationView.js'
+
+    import 'core-js/stable' 
+    import 'regenerator-runtime/runtime' 
+
+    const timeout = function (s) => {
+        return new Promise(function (_, reject) {
+            setTimeout(function() {
+                reject(new Error(`Request took too long! Timeout after ${s} second`))
+            }, s * 1000)
+        })
+    }
+
+    const controlRecipe = async function() {
+        try {
+            const id = window.location.hash.slice(1)
+
+            if (!id) return 
+            resultsView.renderSpinner()
+
+            // 0) update results view to mark selected search result
+            resultsView.render(model.getSearchResultsPage()) 
+
+            // 1 - Loading recipe
+            await model.loadRecipe(id) 
+
+            // 2 - Rendering recipe
+            recipeView.render(model.state.recipe)
+
+        } catch(err) {
+            recipeView.renderError() 
+        }
+    }
+
+    const controlSearchResults = async function() {
+        try {
+            resultsView.renderSpinner()
+
+            // 1) Get search query
+            const query = searchView.getQuery()
+            if (!query) return
+
+            // 2) load search results
+            await model.loadSearchResults(query) 
+
+            // 3) Render results
+            resultsView.render(model.getSearchResultsPage()) 
+
+            // 4) render initial pagination buttons
+            paginationView.render(model.state.search) 
+
+        } catch(err) {
+            console.log(err)
+        }
+    }
+
+    const controlPagination = function(goToPage) { 
+        // 1) Render NEW results
+        resultsView.render(model.getSearchResultsPage(goToPage)) 
+
+        // 2) render NEW  pagination buttons
+        paginationView.render(model.state.search) 
+    }
+
+    const controlAddBookmark = function() {
+        if (!model.state.recipe.bookmarked) {
+            model.addBookmark(model.state.recipe)
+        } else (model.state.recipe.bookmarked) {
+            model.deleteBookmark(model.state.recipe.id)
+        }
+
+        console.log(model.state.recipe)
+        recipeView.update(model.state.recipe)
+    }
+
+    const init = function() {
+        recipeView.addHandlerRender(controlRecipes)
+        recipeView.addHandlerUpdateServings(controlServings)
+        recipeView.addHandlerAddBookmark(controlAddBookmark)
+        searchView.addHandlerSearch(controlSearchResults)
+        paginationView.addHandlerClick(controlPagination)
+    }
+    init()
+    ```
+    - output : search pizza then click on first recipe item & then bookmark it 
+        - & then click on second recipe then bookmark it 
+        - then go to first recipe item & then it's bookmarked already & click on it then we can do un-bookmark too <br>
+            & then go to second recipe & then go back to first recipe it's not bookmarked
+    - so core functionality of bookmarking is implemented 💡💡💡
+
+- now we need to display our all bookmarks inside bookmarks section/panel
