@@ -360,8 +360,15 @@
         // put code from STEP 1.2 before this
                 
         const controlAddRecipe = function(newRecipe) {
-            // Upload the new recipe data
-            model.uploadRecipe(newRecipe)
+            try {
+                // Upload the new recipe data
+                model.uploadRecipe(newRecipe)
+
+            } catch(err) {
+                console.error(err)
+                addRecipeView.renderError(err.message)
+            }
+
         }
 
         const init = function() {
@@ -375,9 +382,469 @@
         }
         init()
         ```
+        - output : click on `add Recipe` button & then click on `upload` button then we'll get those 3 ingredients
+            - but if we write just `5` inside ingredient 4 input field then we'll get the error inside console
+        - so now let's use the try catch block inside uploadRecipe() async function 
+    - `STEP 2.5` : inside model.js file , using try catch block inside uploadRecipe() async function
+        ```js
+        // put code from STEP 1 before this code 
 
+        export const uploadRecipe = async function(newRecipe) {
+            try {
+                const ingredients = Object.entries(newRecipe).filter(entry => {
+                    return entry[0].startsWith(ingredient) && entry[1] !== ""
+                }).map(ing => {
+                    const ingArr = ing[1].replaceAll(" ", "").split(",")
+                    if (ingArr.length !== 3) {
+                        throw new Error('Wrong ingredient format! Please use the correct format :)')
+                            // if the condition is true then after this line code the function gets immediately exit 💡💡💡
+                            // & so our promise gets rejected by throw new Error()
+                    }
 
+                    const [quantity, unit, description] = ingArr
 
+                    return {quantity : quantity ? +quantity : null , unit, description}
+                })
+
+                console.log(ingredients)
+            } catch(err) {
+                throw err
+            }
+        }
+        ```
+        - output : click on `add Recipe` button & then just write `5` inside ingredient 4 input field
+            - & then click on `upload` button then we'll get the error inside the console tab 
+            - but we want to show the error on UI & that should come from the controller <br>
+                so the problem is from controller because inside model.js file , uploadRecipe() is a async function <br>
+                & inside controller.js file , inside controlAddRecipe() function , we didn't await <br>
+                this line of code i.e `model.uploadRecipe(newRecipe)` 💡💡💡
+    - `STEP 2.6` : inside controller.js file , 
+        - using `await` keyword on `model.uploadRecipe(newRecipe)` <br>
+            because only then we can handle this function which returns a promise 💡💡💡 <br>
+            so that rejected promise can get caught
+        - & make controlAddRecipe() function as async function
+        ```js
+        // put code from STEP 1.2 before this
+                
+        const controlAddRecipe = async function(newRecipe) {
+            try {
+                // Upload the new recipe data
+                await model.uploadRecipe(newRecipe)
+
+            } catch(err) {
+                console.error(err)
+                addRecipeView.renderError(err.message)
+            }
+
+        }
+
+        const init = function() {
+            bookmarksView.addHandlerRender(controlBookmarks)
+            recipeView.addHandlerRender(controlRecipes)
+            recipeView.addHandlerUpdateServings(controlServings)
+            recipeView.addHandlerAddBookmark(controlAddBookmark)
+            searchView.addHandlerSearch(controlSearchResults)
+            paginationView.addHandlerClick(controlPagination)
+            addRecipeView.addHandlerUpload(controlAddRecipe) 
+        }
+        init()
+        ```
+        - output : click on `add Recipe` button & then just write `5` inside ingredient 7 input field
+            - & then click on `upload` button then we'll get the error inside the console tab & on UI also like this
+            ![get the error popup in UI](../notes-pics/18-module/24-lecture/lecture-24-9.jpg)
+
+- `STEP 3` : inside model.js file , creating a recipe object
+    ```js
+    // put code from STEP 1 before this code 
+
+    export const uploadRecipe = async function(newRecipe) {
+        try {
+            const ingredients = Object.entries(newRecipe).filter(entry => {
+                return entry[0].startsWith(ingredient) && entry[1] !== ""
+            }).map(ing => {
+                const ingArr = ing[1].replaceAll(" ", "").split(",")
+                if (ingArr.length !== 3) {
+                    throw new Error('Wrong ingredient format! Please use the correct format :)')
+                }
+
+                const [quantity, unit, description] = ingArr
+
+                return {quantity : quantity ? +quantity : null , unit, description}
+            })
+
+            const recipe = {
+                // inside loadRecipe() async function , inside state.recipe object
+                    // whatever sequence we define the keys & properties for receiving/getting things from an API
+                    // that exactly should be same for posting the data on the API
+                
+                title: newRecipe.title ,
+                source_url: newRecipe.sourceUrl,
+                image_url: newRecipe.image ,
+                publisher: newRecipe.publisher,
+                cooking_time: +newRecipe.cookingTime,
+                servings: +newRecipe.servings,
+                ingredients,
+            }
+
+            console.log(recipe)
+        } catch(err) {
+            throw err
+        }
+    }
+    ```
+    - output : click on `add recipe` button & then click on `upload` button without filling any input field
+        - then we'll get this object like this
+        ![output](../notes-pics/18-module/24-lecture/lecture-24-10.jpg)
+        - now this object data we can send to the API
+
+- `STEP 4` : inside helpers.js file , 
+    - we already have getJSON() async function for sending JSON in our helper function inside helpers.js file
+    - so copy code of getJSON() async function & paste inside this file itself & refactor it 
+    ```js
+    import { async } from 'regenerator-runtime' 
+    import { TIMEOUT_SEC } from './config.js'
+
+    const timeout = function (s) => {
+        return new Promise(function (_, reject) {
+            setTimeout(function() {
+                reject(new Error(`Request took too long! Timeout after ${s} second`))
+            }, s * 1000)
+        })
+    }
+
+    export const getJSON = async  function(url) {
+        try {
+            const fetchPro = fetch(url)
+            const res = await Promise.race([fetchPro , timeout(TIMEOUT_SEC)])
+            const data = await res.json()
+
+            if (!res.ok) throw new Error(`${data.message} (${res.status})`)
+
+            return data 
+        } catch(err) {
+            throw err
+        }
+    }
+
+    export const sendJSON = async  function(url) {
+        try {
+            const res = await Promise.race([fetch(url) , timeout(TIMEOUT_SEC)])
+            const data = await res.json()
+
+            if (!res.ok) throw new Error(`${data.message} (${res.status})`)
+
+            return data 
+        } catch(err) {
+            throw err
+        }
+    }
+    ```
+    - now we'll see how to send the data to the API by using fetch() function API <br>
+        so up until this point , we just pass a URL inside the fetch() api function <br>
+        & then it would automatically create a `GET` request 💡💡💡
+    - however , to send data , we use post request , so passing URL as first argument inside fetch() <br>
+        we also need to pass an object with some options as second argument 💡💡💡
+    - `STEP 4.1` : inside helpers.js file , passing an object as 2nd argument inside fetch() function for post request 🔥
+        ```js
+        import { async } from 'regenerator-runtime' 
+        import { TIMEOUT_SEC } from './config.js'
+
+        const timeout = function (s) => {
+            return new Promise(function (_, reject) {
+                setTimeout(function() {
+                    reject(new Error(`Request took too long! Timeout after ${s} second`))
+                }, s * 1000)
+            })
+        }
+
+        export const getJSON = async function(url) {
+            try {
+                const fetchPro = fetch(url)
+                const res = await Promise.race([fetchPro , timeout(TIMEOUT_SEC)])
+                const data = await res.json()
+
+                if (!res.ok) throw new Error(`${data.message} (${res.status})`)
+
+                return data 
+            } catch(err) {
+                throw err
+            }
+        }
+
+        export const sendJSON = async  function(url , uploadData) {
+            try {
+                const fetchPro = fetch(url, {
+                    // first option is a method -> key/property
+                    method: "POST" , 
+                    // second option is a headers -> property
+                        // headers -> property takes value in object form 💡💡💡
+                    headers: {
+                        "Content-Type": 'application/json'
+                        // C & T should be capital & other things should be exactly same 
+                            // 'application/json' -> this value means the data which we're sending to the API
+                                // is going to be in JSON Format 
+                            // so only then our API can correctly accept that data 
+                                // & create a new recipe in the database 
+                                // because this API accept data in JSON format only 💡💡💡 
+                    }, 
+                    // 3rd option - is a payload of the request
+                        // means the data that we want to send i.e body -> property 💡💡💡
+                        // & value of body -> property should be only in JSON 💡💡💡
+                    body: JSON.stringify(uploadData)
+                        // so here we parsed the data in json format , so that it can be sent to the API
+                })
+                // means we pass the URL , upload data & then take the URL , upload data
+                    // & then simply create a fetch() request 
+
+                const res = await Promise.race([fetchPro , timeout(TIMEOUT_SEC)])
+                const data = await res.json()
+
+                if (!res.ok) throw new Error(`${data.message} (${res.status})`)
+
+                return data 
+            } catch(err) {
+                throw err
+            }
+        }
+        ```
+    - `STEP 4.2` : inside model.js file , importing sendJSON() async function
+        ```js
+        import { async } from 'regenerator-runtime' ;
+        import { API_URL , RES_PER_PAGE } from '.config.js'
+        import { getJSON , sendJSON } from './helpers.js'
+                
+        export const state = {
+            recipe: {} , 
+            search: {
+                query: "" ,
+                result: [] , 
+                page: 1 , 
+                resultsPerPage: RES_PER_PAGE, 
+            } ,
+            bookmarks: [] 
+        }
+
+        export const loadRecipe = async function(id) {  
+            try {
+                const data = await getJSON(`${API_URL}${id}`)
+
+                const { recipe } = data.data 
+                state.recipe = { 
+                    id:  recipe.id , 
+                    title: recipe.title, 
+                    publisher: recipe.publisher,
+                    sourceUrl: recipe.source_url ,
+                    image: recipe.image_url, 
+                    servings: recipe.servings, 
+                    cookingTime: recipe.cooking_time ,
+                    ingredients: recipe.ingredients
+                }
+
+                if (state.bookmarks.some(bookmark => bookmark.id === id)) {
+                    state.recipe.bookmarked = true
+                } else {
+                    state.recipe.bookmarked = false
+                }
+                
+                console.log(state.recipe) 
+            } catch(err) {
+                console.log(`${err} 💥💥💥`)
+                throw err 
+            }
+        }
+
+        export const loadSearchResults = async function() {
+            try {
+                state.search.query = query                
+                const data = await getJSON(`${API_URL}?search=${query}`)
+
+                state.search.results = data.data.recipes.map(rec => {
+                    return {
+                        id:  rec.id , 
+                        title: rec.title, 
+                        publisher: rec.publisher,
+                        image: rec.image_url, 
+                    }
+                })
+
+                state.search.page = 1 
+            } catch(err) {
+                console.log(`${err} 💥💥💥`)
+                throw err 
+            }
+        }
+
+        export const getSearchResultsPage = function(page = state.search.page) { 
+            state.search.page = page
+
+            const start = (page - 1) * state.search.resultsPerPage 
+            const end = page * state.search.resultsPerPage
+            return state.search.results.slice(start, end)
+        }   
+
+        const persistBookmarks = function() {
+            localStorage.setItem("bookmarks", JSON.stringify(state.bookmarks))
+        }
+
+        export const addBookmark = function(recipe) {
+            // add bookmark
+            state.bookmarks.push(recipe)
+
+            // Mark Current recipe as bookmarked
+            if (recipe.id === state.recipe.id) {
+                state.recipe.bookmarked = true
+            }
+
+            persistBookmarks()
+        }
+
+        export const deleteBookmark = function(id) {
+            // Delete bookmark
+            const index = state.bookmarks.findIndex(el => el.id === id)
+            state.bookmarks.splice(index, 1)
+
+            // Mark Current recipe as NOT bookmarked
+            if (id === state.recipe.id) {
+                state.recipe.bookmarked = false
+            }
+
+            persistBookmarks()
+        }
+
+        const init = function() {
+            const storage = localStorage.getItem("bookmarks")
+            if (storage) state.bookmarks = JSON.parse(storage)
+        }
+        init()
+
+        const clearBookmarks = function() {
+            localStorage.clear('bookmarks')
+        }
+        // clearBookmarks()
+
+        export const uploadRecipe = async function(newRecipe) {
+            try {
+                const ingredients = Object.entries(newRecipe).filter(entry => {
+                    return entry[0].startsWith(ingredient) && entry[1] !== ""
+                }).map(ing => {
+                    const ingArr = ing[1].replaceAll(" ", "").split(",")
+                    if (ingArr.length !== 3) {
+                        throw new Error('Wrong ingredient format! Please use the correct format :)')
+                    }
+
+                    const [quantity, unit, description] = ingArr
+
+                    return {quantity : quantity ? +quantity : null , unit, description}
+                })
+
+                const recipe = {
+                    title: newRecipe.title ,
+                    source_url: newRecipe.sourceUrl,
+                    image_url: newRecipe.image ,
+                    publisher: newRecipe.publisher,
+                    cooking_time: +newRecipe.cookingTime,
+                    servings: +newRecipe.servings,
+                    ingredients,
+                }
+
+                sendJSON(`${API_URL}`)
+
+            } catch(err) {
+                throw err
+            }
+        }
+        ```
+        - now go to this URL `https://forkify-api.herokuapp.com/v2` & click on generate API key
+            - & if you get any error while generating api key then might be you requested more than one API keys per hour
+            - so we can't do multiple request in per hour
+        - so copy that API key & scroll down & under `Parameters` section , URL path will be same for getting all the recipes , <br>
+            we don't need `search` parameter but we need `key` parameter
+        - & we're doing POST request to create a new recipe <br>
+            & then when we hit that end point i.e `https://forkify-api.herokuapp.com/api/v2/recipes` <br>
+            with a POST request & some data 💡💡💡
+
+- `STEP 5` : inside config.js file , storing the API key or developer key
+    ```js
+    export const API_URL = 'https://forkify-api.herokuapp.com/api/v2/recipes/'; 
+    export const TIMEOUT_SEC = 10;
+    export const RES_PER_PAGE = 10
+    export const key = 'baaa8526-5076-41d6-a1bd-4c440b649037'
+    ```
+    - `STEP 5.1` : inside model.js file , specifying the parameters inside sendJSON() async function
+        ```js
+        import { async } from 'regenerator-runtime' ;
+        import { API_URL , RES_PER_PAGE, KEY } from '.config.js'
+        import { getJSON } from './helpers.js'
+
+        // put this code from STEP 4.2 after & before , below & above code 
+
+        export const uploadRecipe = async function(newRecipe) {
+            try {
+                const ingredients = Object.entries(newRecipe).filter(entry => {
+                    return entry[0].startsWith(ingredient) && entry[1] !== ""
+                }).map(ing => {
+                    const ingArr = ing[1].replaceAll(" ", "").split(",")
+                    if (ingArr.length !== 3) {
+                        throw new Error('Wrong ingredient format! Please use the correct format :)')
+                    }
+
+                    const [quantity, unit, description] = ingArr
+
+                    return {quantity : quantity ? +quantity : null , unit, description}
+                })
+
+                const recipe = {
+                    title: newRecipe.title ,
+                    source_url: newRecipe.sourceUrl,
+                    image_url: newRecipe.image ,
+                    publisher: newRecipe.publisher,
+                    cooking_time: +newRecipe.cookingTime,
+                    servings: +newRecipe.servings,
+                    ingredients,
+                }
+
+                const data = await sendJSON(`${API_URL}?key=${KEY}`, recipe)
+                    // Imp Note 🔥 : why we need question mark after end point means a URL
+                        // here question mark (before the end point i.e URL)
+                        // is used to specify a list of parameters 💡💡💡
+
+                console.log(data)
+            } catch(err) {
+                throw err
+            }
+        }
+        ```
+        - output : console.log(data)
+            - click on `add recipe` button & then click on `upload` button 
+            - then we'll get the error like this
+                ![error](../notes-pics/18-module/24-lecture/lecture-24-11.jpg)
+                - so this error is coming from the API
+            - this error means the input data is invalid because the source URL needs to be at least 5 characters long <br>
+                because in URL input field , length of URL should be least 5 characters long
+    - `STEP 5.2` : inside index.html file , passing value like `TEST23` in each input field which has `TEST` value
+        ```html
+        <div class="upload__column">
+            <h3 class="upload__heading">Recipe data</h3>
+            <label>Title</label>
+            <input value="TEST23" required name="title" type="text" />
+            <label>URL</label>
+            <input value="TEST23" required name="sourceUrl" type="text" />
+            <label>Image URL</label>
+            <input value="TEST23" required name="image" type="text" />
+            <label>Publisher</label>
+            <input value="TEST23" required name="publisher" type="text" />
+            <label>Prep time</label>
+            <input value="23" required name="cookingTime" type="number" />
+            <label>Servings</label>
+            <input value="23" required name="servings" type="number" />
+        </div>
+        ```
+        - output : now click `add recipe` button then we'll get the those input fields with `TEST23`
+            - now click on `upload` button then we'll get this object    
+            ![success object](../notes-pics/18-module/24-lecture/lecture-24-12.jpg)
+            - so we got the data which we need to send & inside this object , we got createdAt & id <br>
+                & the API key which we got which is very important when we want to mark our own recipes 💡💡💡 
+            
     
 ✔️✔️✔️
 💡💡💡
