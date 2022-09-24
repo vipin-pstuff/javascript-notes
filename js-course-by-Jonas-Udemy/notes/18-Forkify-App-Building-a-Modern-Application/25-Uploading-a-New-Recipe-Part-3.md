@@ -403,8 +403,327 @@
             }
         }
         ```
-        - output : 
+        - output : search pizza then click on `add recipe` button 
+            - now inside title input field , write `TEST23456` , now just focus on hash ID of URL , so click on `upload` button 
+            - so now Hash id of URL gets changed based on that newly created recipe like this
+                ![hash id](../notes-pics/18-module/25-lecture/lecture-25-0.jpg)
+                - so hash id of URL is same as the id we got in console 
+            - now that recipe also added inside bookmarks view panel & also that recipe is added on right side of the UI 
+            - now when we reload the page then we'll get that newly created recipe on right side of the UI like this
+                ![hash id](../notes-pics/18-module/25-lecture/lecture-25-1.jpg)
+    - now let's use the API key in order to mark this recipe as our own recipe by displaying a small person icon <br>
+        so for this we need to attach our API key with all the API queries 💡💡💡 <br>
+        so check this API website for how to apply API key because it's depends on API author
 
+- `STEP 4` : inside model.js file , marking our own recipe by displaying a small person icon
+    - while loading search results
+    ```js
+    import { async } from 'regenerator-runtime' ;
+    import { API_URL , RES_PER_PAGE } from '.config.js'
+    import { AJAX } from './helpers.js'
+            
+    export const state = {
+        recipe: {} , 
+        search: {
+            query: "" ,
+            result: [] , 
+            page: 1 , 
+            resultsPerPage: RES_PER_PAGE, 
+        } ,
+        bookmarks: [] 
+    }
+
+    const createRecipeObject = function(data) {
+        const { recipe } = data.data 
+        return { 
+            id:  recipe.id , 
+            title: recipe.title, 
+            publisher: recipe.publisher,
+            sourceUrl: recipe.source_url ,
+            image: recipe.image_url, 
+            servings: recipe.servings, 
+            cookingTime: recipe.cooking_time ,
+            ingredients: recipe.ingredients,
+            ...(recipe.key && { key : recipe.key })
+        }
+    }
+
+    export const loadRecipe = async function(id) {  
+        try {
+            const data = await AJAX(`${API_URL}${id}&key=${KEY}`)
+
+            state.recipe = createRecipeObject(data)
+
+            if (state.bookmarks.some(bookmark => bookmark.id === id)) {
+                state.recipe.bookmarked = true
+            } else {
+                state.recipe.bookmarked = false
+            }
+            
+            console.log(state.recipe) 
+        } catch(err) {
+            console.log(`${err} 💥💥💥`)
+            throw err 
+        }
+    }
+
+    export const loadSearchResults = async function() {
+        try {
+            state.search.query = query                
+            // const data = await AJAX(`${API_URL}?search=${query}?key=${KEY}`)
+                // but here we can't put again ? -> question mark sign because we already have the parameter 
+                    // so we need to put & -> ampersand sign
+            const data = await AJAX(`${API_URL}?search=${query}&key=${KEY}`)
+                // now adding this API key for search results , then it should load all the recipes
+                    // including that recipe which contain our own Key
+                // means if we search avocado which exist in the bookmarks view panel 
+                    // so if we search it , then it should show the avocado 
+                        // on the top which we created by the user 💡💡💡
+                // so we need to mark our own recipe on left side UI & on right side UI also 
+                    // & that recipe will be shown which is created by you based on your own API key
+                    // because your recipe is linked with your API key 💡💡💡
+
+            state.search.results = data.data.recipes.map(rec => {
+                return {
+                    id:  rec.id , 
+                    title: rec.title, 
+                    publisher: rec.publisher,
+                    image: rec.image_url, 
+                }
+            })
+
+            state.search.page = 1 
+        } catch(err) {
+            console.log(`${err} 💥💥💥`)
+            throw err 
+        }
+    }
+
+    export const getSearchResultsPage = function(page = state.search.page) { 
+        state.search.page = page
+
+        const start = (page - 1) * state.search.resultsPerPage 
+        const end = page * state.search.resultsPerPage
+        return state.search.results.slice(start, end)
+    }   
+
+    const persistBookmarks = function() {
+        localStorage.setItem("bookmarks", JSON.stringify(state.bookmarks))
+    }
+
+    export const addBookmark = function(recipe) {
+        // add bookmark
+        state.bookmarks.push(recipe)
+
+        // Mark Current recipe as bookmarked
+        if (recipe.id === state.recipe.id) {
+            state.recipe.bookmarked = true
+        }
+
+        persistBookmarks()
+    }
+
+    export const deleteBookmark = function(id) {
+        // Delete bookmark
+        const index = state.bookmarks.findIndex(el => el.id === id)
+        state.bookmarks.splice(index, 1)
+
+        // Mark Current recipe as NOT bookmarked
+        if (id === state.recipe.id) {
+            state.recipe.bookmarked = false
+        }
+
+        persistBookmarks()
+    }
+
+    const init = function() {
+        const storage = localStorage.getItem("bookmarks")
+        if (storage) state.bookmarks = JSON.parse(storage)
+    }
+    init()
+
+    const clearBookmarks = function() {
+        localStorage.clear('bookmarks')
+    }
+
+    export const uploadRecipe = async function(newRecipe) {
+        try {
+            const ingredients = Object.entries(newRecipe).filter(entry => {
+                return entry[0].startsWith(ingredient) && entry[1] !== ""
+            }).map(ing => {
+                const ingArr = ing[1].replaceAll(" ", "").split(",")
+                if (ingArr.length !== 3) {
+                    throw new Error('Wrong ingredient format! Please use the correct format :)')
+                }
+
+                const [quantity, unit, description] = ingArr
+
+                return {quantity : quantity ? +quantity : null , unit, description}
+            })
+
+            const recipe = {
+                title: newRecipe.title ,
+                source_url: newRecipe.sourceUrl,
+                image_url: newRecipe.image ,
+                publisher: newRecipe.publisher,
+                cooking_time: +newRecipe.cookingTime,
+                servings: +newRecipe.servings,
+                ingredients,
+            }
+
+            const data = await AJAX(`${API_URL}?key=${KEY}`, recipe)
+            state.recipe = createRecipeObject(data)
+            addBookmark(state.recipe)
+        } catch(err) {
+            throw err
+        }
+    }
+    ```
+
+- `STEP 5` : inside recipeView.js file , marking our own recipe icon 
+    ```js
+    import View from './View.js'
+
+    import icons from 'url:../../img/icons.svg' 
+    import { Fraction }  from 'fractional' 
+
+    class RecipeView extends View {
+        _parentElement = document.querySelector('.btn') ;
+        _errorMessage = "we could not find that recipe. Please try another one!" ;
+        _message = "";
+
+        addHandlerRender(handler) {
+            ['hashchange', 'load'].forEach((e) => window.addEventListener(e , handler))
+        }
+
+        addHandlerUpdateServings(handler) {
+            this._parentElement.addEventListener('click' , function(e) {
+                const btn = e.target.closest('.btn--update-servings')
+                if (!btn) return 
+                const { updateTo } = btn.dataset
+                if (+updateTo > 0) handler(+updateTo) 
+            })
+        }
+
+        addHandlerAddBookmark(handler) {
+            this._parentElement.addEventListener('click' , function(e) {
+                const btn = e.target.closest('.btn--update-servings')
+                if (!btn) return 
+                handler()
+            })
+        }
+
+        _generateMarkup() {
+            return `
+                <figure class="recipe__fig">
+                    <img src="${this._data.image}" alt="${this._data.title}" class="recipe__img" />
+                    <h1 class="recipe__title">
+                      <span>${this._data.title}</span>
+                    </h1>
+                </figure>
+
+                <div class="recipe__details">
+                    <div class="recipe__info">
+                        <svg class="recipe__info-icon"><use href="${icons}#icon-clock"></use></svg>
+                        <span class="recipe__info-data recipe__info-data--minutes">${this._data.cookingTime}</span>
+                        <span class="recipe__info-text">minutes</span>
+                    </div>
+                    <div class="recipe__info">
+                        <svg class="recipe__info-icon"><use href="${icons}#icon"></use></svg>
+                        <span class="recipe__info-data recipe__info-data--people">${this._data.servings}</span>
+                        <span class="recipe__info-text">servings</span>
+
+                        <div class="recipe__info-buttons">
+                            <button class="btn--tiny btn--update-servings" data-update-to="${this._data.servings - 1}">
+                              <svg><use href="${icons}#icon-minus-circle"></use></svg>
+                            </button>
+                            <button class="btn--tiny btn--update-servings" data-update-to="${this._data.servings + 1}">
+                              <svg><use href="${icons}#icon-plus-circle"></use></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="recipe__user-generated ${this._data.key ? "" : "hidden"}">
+                        <svg><use href="${icons}#icon-user"></use></svg>
+                    </div>
+                    <button class="btn--round btn-bookmark">
+                        <svg class=""><use href="${icons}#icon-bookmark${this._data.bookmarked ? '-fill' : ""}"></use></svg>
+                    </button>
+                </div>
+
+                <div class="recipe__ingredients">
+                    <h2 class="heading--2">Recipe ingredients</h2>
+                    <ul class="recipe__ingredient-list">
+                        ${this._data.ingredients.map(this._generateMarkupIngredient).join('')}
+                    </ul>
+                </div>
+
+                <div class="recipe__directions">
+                    <h2 class="heading--2">How to cook it</h2>
+                    <p class="recipe__directions-text">
+                        This recipe was carefully designed and tested by
+                        <span class="recipe__publisher">${this._data.publisher}</span>. Please check out
+                        directions at their website.
+                    </p>
+                    <a class="btn--small recipe__btn" href="${this._data.sourceUrl}"target="_blank">
+                    <span>Directions</span>
+                    <svg class="search__icon"><use href="${icons}#icon-arrow-right"></use></svg>
+                  </a>
+                </div>
+            ` ;
+        }
+
+        _generateMarkupIngredient(ing) {
+            return `
+                <li class="recipe__ingredient">
+                    <svg class="recipe__icon"><use href="${icons}#icon-check"></use></svg>
+                    <div class="recipe__quantity">${ing.quantity ? Fraction(ing.quantity).toString() : ""}</div>
+                    <div class="recipe__description">
+                        <span class="recipe__unit">${ing.unit}</span>
+                        ${ing.description}
+                    </div>
+                </li>
+            `
+        }
+    }
+    ```
+    - `<div class="recipe__user-generated ${this._data.key ? "" : "hidden"}"><svg><use href="${icons}#icon-user"></use></svg></div>`
+        - means if there's a key then we want to add no class at all but there's is a key then add the hidden class
+    - let's do same thing in previewView.js file 
+    - `STEP 5.1` : inside previewView.js file , adding hidden class if there's a key
+        - & refactoring code for adding hidden class
+        ```js
+        import View from './View.js'
+        import icons from 'url:../../img/icons.svg' 
+
+        class PreviewView extends View {
+            _parentElement = "" // we don't need parent element 
+
+            _generateMarkup(result) {
+                const id = window.location.hash.slice(1) // getting first element
+
+                return ` 
+                    <li class="preview">
+                        <a class="preview__link ${this._data.id === id ? 'preview__link--active' : ''}" href="#${this._data.id}">
+                            <figure class="preview__fig">
+                                <img src="${this._data.image}" alt="${this._data.title}" />
+                            </figure>
+                            <div class="preview__data">
+                                <h4 class="preview__title">${this._data.title}</h4>
+                                <p class="preview__publisher">${this._data.publisher}</p>
+                                <div class="preview__user-generated ${this._data.key ? "" : "hidden"}">
+                                    <svg><use href="${icons}#icon-user"></use></svg>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                `
+            }
+        }
+
+        export default new PreviewView() 
+        ```
+        - output : 
 
 
 ✔️✔️✔️
