@@ -133,7 +133,165 @@
             - like here if hover on render() function then we'll get this overview like this 
             ![overview about that function](../notes-pics/18-module/26-lecture/lecture-26-0.jpg)
 - `STEP 4` : let's add more param instead of just description of these parameters
+    - so we can write what that function returns
     ```js
-    
+    import icons from 'url:../../img/icons.svg' 
+
+    export default class View {
+        _data ; 
+
+        /**
+         * Render the received object to the DOM
+         * @param {Object | Object[]} data The data to be rendered (e.g. recipe)
+         * @param {boolean} [render=true] If false , create markup string instead of rendering to the DOM
+         * @returns {undefined | string} A markup string is returned if render=false
+         * @this View object
+         */
+            // so we define @returns -> means what render() function return
+                // so right now it doesn't return anything but in future might be it return string 
+                // & then we wrote this description 💡💡💡
+            // we define @this -> means here we define this -> keyword
+                // & this -> keyword point to View -> object 
+                // & then we wrote description i.e object
+
+        render(data, render = true) {
+            this._data = data
+            const markup = this._generateMarkup()
+            if (!render) return markup
+            this._clear()
+            this._parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
+
+        // put other code after this above render() function
+    }
+    ```
+    - now when we hover on render() function then we'll get object -> as description which we don't want <br>
+        so let's define the datatype like this
+        ```js
+        import icons from 'url:../../img/icons.svg' 
+
+        export default class View {
+            _data ; 
+
+            /**
+             * Render the received object to the DOM
+             * @param {Object | Object[]} data The data to be rendered (e.g. recipe)
+             * @param {boolean} [render=true] If false , create markup string instead of rendering to the DOM
+             * @returns {undefined | string} A markup string is returned if render=false
+             * @this {object} View instance
+             */
+
+            render(data, render = true) {
+                this._data = data
+                const markup = this._generateMarkup()
+                if (!render) return markup
+                this._clear()
+                this._parentElement.insertAdjacentHTML('afterbegin', markup)
+            }
+
+            // put other code after this above render() function
+        }
+        ```
+        - now when we hover on render() function then we'll get this
+            ![output](../notes-pics/18-module/26-lecture/lecture-26-1.jpg)
+            - so we can see this function is going to return either undefined or a string
+
+- `STEP 5` : using `@author`
+    ```js
+    import icons from 'url:../../img/icons.svg' 
+
+    export default class View {
+        _data ; 
+
+        /**
+         * Render the received object to the DOM
+         * @param {Object | Object[]} data The data to be rendered (e.g. recipe)
+         * @param {boolean} [render=true] If false , create markup string instead of rendering to the DOM
+         * @returns {undefined | string} A markup string is returned if render=false
+         * @this {object} View instance
+         * @author Jonas
+         */
+            // here we define Jonas as author name
+
+        render(data, render = true) {
+            this._data = data
+            const markup = this._generateMarkup()
+            if (!render) return markup
+            this._clear()
+            this._parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
+
+        // put other code after this above render() function
+    }
     ```
 
+- `STEP 6` : using @todo
+    ```js
+    import icons from 'url:../../img/icons.svg' 
+
+    export default class View {
+        _data ; 
+
+        /**
+         * Render the received object to the DOM
+         * @param {Object | Object[]} data The data to be rendered (e.g. recipe)
+         * @param {boolean} [render=true] If false , create markup string instead of rendering to the DOM
+         * @returns {undefined | string} A markup string is returned if render=false
+         * @this {object} View instance
+         * @author Jonas
+         * @todo finish implementation
+         */
+
+            // & to end the JSDocs , we use @todo
+
+        render(data, render = true) {
+            this._data = data
+            const markup = this._generateMarkup()
+            if (!render) return markup
+            this._clear()
+            this._parentElement.insertAdjacentHTML('afterbegin', markup)
+        }
+
+        // put other code after this above render() function
+    }
+    ```
+    - so you can add these params on a function , so that when you come back after 1 or 5 years then you can understand it 
+    - & these are major ones to define a function 
+
+## ideas for features & improvements of this app (practice it)
+
+- so we'll go from easy features to complex one
+![features to implement](../notes-pics/18-module/26-lecture/lecture-26-2.jpg)
+
+- Easy features 
+    - `1` : display number of pages b/w the pagination buttons
+        - so that user would immediately know how many pages there are for user friendly
+    - `2` : ability to sort search results by duration or number of ingredients
+        - add the ability for the user to sort the search results by the duration or by the number of ingredients of the found recipes
+        - However , the data is not available on the search results unless i do some changes to the API <br>
+            so implement this otherwise you have to get this information for all of the recipes in the search results <br>
+            but that would require quite a lot of work & also a lot of API calls
+    - `3` : Perform ingredient validation in view , before submitting the form
+        - Eg : while the user is inputting the ingredients , you could warn the ahead of time <br>
+            like the format is wrong which will make user friendly
+    - `4` : improve recipe ingredient input : separate in multiple fields & allow more than 6 ingredients 
+        - so maybe you could actually improve the input of the ingredients
+        - so instead of having the quantity unit & description all in one field , <br>
+            you could add a different field for these three data points & then read all that data into your application
+        - & besides that , you could also allow for more than six ingredients . like there's a lot of improvements <br>
+            like @recipe functionality
+
+- complex feature
+    - `1` : shopping list feature : button on recipe to add ingredients to a list
+        - on left side of UI , on each recipe , you could have a button <br>
+            which can be used to add all the ingredients of that recipe just kind-of list <br>
+            & so , you could then display that list like on the UI , in another hidden panel in the menu bar the bookmarks
+        - so that list would contain all the ingredients that you might add from different recipes
+    - `2` : weekly meal planning feature
+        - for this one you could add like a drop down menu to each of the recipes 
+        - & from there , choose which of the next 7 days , you want to assign that recipe to
+        - & then , in the menu bar , you could again have like a panel which shows the next 7 days & then which of the recipes was assigned to each day
+    - `3` : get nutrition data
+        - get each ingredient from spoonacular API
+        - & for each of the ingredients , get the calories & then you could calculate the total calories of one recipe <br>
+            & maybe also per serving
