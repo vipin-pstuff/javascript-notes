@@ -181,3 +181,8 @@
             it's called function expression
         -> so that we can call/use return value of that function 
             through that variable anywhere without paranthesis
+
+## Notes ✅
+
+- when we don't call a function then it's function definition or function body will not be called <br>
+    which is a advantage of creating a function 💡💡💡
