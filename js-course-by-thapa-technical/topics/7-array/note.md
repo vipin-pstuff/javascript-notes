@@ -770,6 +770,17 @@
             - but in forEach() doesn't do because it returns undefined
                 which means falsely value that's why 
 
+    - Higher Order Function : means a function which takes another function as an argument those are higher order function like map() , etc 💡💡💡
+        - & the function which is a argument inside map() function , that's the callback function 💡💡💡
+    - Eg : 
+        const doubleMap = (numbers) => {
+            return numbers.map(number => number * 2)
+        }
+        - here numbers.map(number => number * 2) 
+            - means take an array of numbers
+            - then loop it on each number i.e number
+            - then double them 💡💡💡
+
 ## reduce() method ✅
 
     - used to flatten an array means to convert the 3rd or 2d array 
@@ -902,3 +913,8 @@
 
     - you need to hard + smart work and understand work
         how it's done
+
+## map() vs filter()
+
+- map() : used to loop over the array & return brand new array based on some manipulation on each elements
+- filter() : used to loop over the array & return brand new array based on the condition 💡💡💡
