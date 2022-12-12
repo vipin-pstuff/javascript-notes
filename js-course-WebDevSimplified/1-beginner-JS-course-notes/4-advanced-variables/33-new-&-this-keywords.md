@@ -469,6 +469,55 @@
                 if we want to access the keys/properties & methods
                 then use object name
 
+## my note
+
+- difference b/w arrow & normal function with `this` keyword
+    - normal function with `this` keyword
+        - `1st example` : 
+            ```
+            function callMe() {
+                console.log(this)
+            }
+
+            callMe()
+            ```
+            - so by-default , globally , `this` keyword points to the `window` global object 💡💡💡
+        - `2nd example` : 
+            ```
+            let aboutIt = {
+                num : 1 ,
+                myFunc : function (num) {
+                    console.log(num, this)
+                }
+            }
+            aboutIt.myFunc()
+
+            // OR 
+
+            let aboutIt = {
+                num : 1 ,
+                myFunc(num) {
+                    console.log(num, this)
+                    console.log(this.num)
+                }
+            }
+            aboutIt.myFunc()
+            ```
+            - we used normal function inside an object , so `this` keyword points to that object itself
+        - `3rd example` : 
+            ```
+            let aboutIt = {
+                num : 1 ,
+                myFunc : (num) => {
+                    console.log(num, this)
+                }
+            }
+            aboutIt.myFunc()
+            ```
+            - we used arrow function inside an object , so `this` keyword is pointing to the `window` global object
+            - that's why use normal function inside an object if we're dealing with `this` keyword <br>
+                & if we're passing or defining a callback function as an argument then we use arrow function 
+
 ## said by kyle ✅
 
     - this is not we're going to write very much 
