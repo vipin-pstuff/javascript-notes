@@ -56,6 +56,9 @@
             but maybe it runs multiple times in a row 
             after specified time such as an even listener 💡💡💡
 
+        - so setTimeout() function "fire/execute the callback function" (which is a argument) 
+            & whatever the stuff are defined inside the callback function will also be executed 💡💡💡
+
 ## example - of addEventListener() method ✅
 
     eg : 
