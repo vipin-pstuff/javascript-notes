@@ -117,6 +117,18 @@
                     console.log(favoriteNumber)
 
                     // output : 3 and then 4 
+        
+        Note : why let -> keyword was introduced
+
+            - if we declare same variable 2 times via var -> keyword like this
+                var first = 2 
+                var first = 3
+                - then we'll not get any error , but error should be shown
+            - but if we do this via let -> keyword 
+                let first = 2 
+                let first = 3
+                - then we'll get error that first -> variable is already been declared
+            - that's why let -> keyword was introduced
 
 ## Note for let keyword only
 
